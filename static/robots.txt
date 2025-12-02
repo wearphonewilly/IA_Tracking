@@ -1,2 +1,4 @@
 User-agent: *
 Disallow: /
+
+Sitemap: https://medicion-i-as-dashboard.vercel.app/sitemap.xml
