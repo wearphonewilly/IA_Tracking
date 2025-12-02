@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Medición de IAs</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div>
+                    <h1>Dashboard</h1>
+                    <p class="subtitle">Monitoriza la visibilidad de tus keywords en respuestas de IA</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-secondary" onclick="refreshData()">
+                        <span class="icon">⟳</span> Actualizar
+                    </button>
+                    <button class="btn btn-primary" onclick="createNewQuery()">
+                        <span class="icon">+</span> Nueva Query
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon blue">🎯</div>
+                <div class="stat-content">
+                    <div class="stat-value" id="stat-active-queries">0</div>
+                    <div class="stat-label">Queries Activas</div>
+                    <div class="stat-change" id="stat-active-change"></div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon blue">🔍</div>
+                <div class="stat-content">
+                    <div class="stat-value" id="stat-total-results">0</div>
+                    <div class="stat-label">Resultados Totales</div>
+                    <div class="stat-change" id="stat-total-change"></div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon blue">📊</div>
+                <div class="stat-content">
+                    <div class="stat-value" id="stat-avg-visibility">0%</div>
+                    <div class="stat-label">Visibilidad Media</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon blue">⚡</div>
+                <div class="stat-content">
+                    <div class="stat-value" id="stat-total-models">0</div>
+                    <div class="stat-label">Modelos IA</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Queries Section -->
+        <section class="queries-section">
+            <h2>Queries Configuradas</h2>
+            <div id="queries-container"></div>
+        </section>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>
+

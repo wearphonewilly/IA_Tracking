@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Query Detail - Medición de IAs</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="header-left">
+                    <button class="btn-icon" onclick="goBack()">←</button>
+                    <div>
+                        <h1 id="query-title">Query</h1>
+                        <p class="subtitle" id="query-subtitle">Preguntas y modelos trackeados</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-secondary" onclick="refreshData()">
+                        <span class="icon">⟳</span> Actualizar
+                    </button>
+                    <button class="btn btn-secondary" onclick="editQuery()">
+                        <span class="icon">✎</span> Editar
+                    </button>
+                    <button class="btn btn-danger" onclick="deleteQuery()">
+                        <span class="icon">🗑</span> Eliminar
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Query Content -->
+        <div id="query-content"></div>
+    </div>
+
+    <script>
+        // Obtener queryId de la URL (formato: /query/<id>)
+        const pathParts = window.location.pathname.split('/');
+        const queryId = pathParts[pathParts.length - 1];
+    </script>
+    <script src="{{ url_for('static', filename='js/query_detail.js') }}"></script>
+</body>
+</html>
+

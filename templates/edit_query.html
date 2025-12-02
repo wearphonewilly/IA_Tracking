@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Query - Medición de IAs</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="header-left">
+                    <button class="btn-icon" onclick="goBack()">←</button>
+                    <div>
+                        <h1 id="page-title">Editar Query</h1>
+                        <p class="subtitle">Configura los parámetros de tracking</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Form -->
+        <form id="query-form" class="query-form">
+            <!-- Información Básica -->
+            <section class="form-section">
+                <h2>Información Básica</h2>
+                
+                <div class="form-group">
+                    <label for="query-name">Nombre del Grupo</label>
+                    <input type="text" id="query-name" name="name" placeholder="Ej: eSimFlag" required>
+                    <small>Nombre para agrupar queries similares</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Keywords o Marcas</label>
+                    <div class="keyword-input-group">
+                        <input type="text" id="keyword-input" placeholder="Añade una keyword y presiona Enter">
+                        <button type="button" class="btn btn-primary" onclick="addKeyword()">Añadir</button>
+                    </div>
+                    <div id="keywords-container" class="keywords-container"></div>
+                    <small>Puedes añadir más keywords en cualquier momento</small>
+                </div>
+            </section>
+
+            <!-- Prompts por Idioma -->
+            <section class="form-section">
+                <h2>Prompts por Idioma</h2>
+                <div id="prompts-container"></div>
+                <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
+                    <select id="language-select" style="padding: 0.625rem 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem; font-size: 0.875rem;">
+                        <option value="Español">Español</option>
+                        <option value="English">English</option>
+                        <option value="Français">Français</option>
+                        <option value="Deutsch">Deutsch</option>
+                        <option value="Italiano">Italiano</option>
+                        <option value="Português">Português</option>
+                    </select>
+                    <button type="button" class="btn btn-primary" onclick="addLanguageFromSelect()">
+                        <span class="icon">+</span> Añadir
+                    </button>
+                </div>
+            </section>
+
+            <!-- Modelos de IA -->
+            <section class="form-section">
+                <h2>Modelos de IA</h2>
+                <div id="models-container" class="models-container"></div>
+            </section>
+
+            <!-- Actions -->
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="goBack()">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Actualizar</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const queryId = new URLSearchParams(window.location.search).get('id');
+    </script>
+    <script src="{{ url_for('static', filename='js/edit_query.js') }}"></script>
+</body>
+</html>
+
