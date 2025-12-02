@@ -70,4 +70,3 @@ http://localhost:5000
 - Cada línea en el campo de prompt se trata como una pregunta separada
 - Usa `{keyword}` como placeholder en los prompts para reemplazar automáticamente por las keywords
 - Los resultados de tracking se guardan en una base de datos SQLite (`dashboard.db`)
-
