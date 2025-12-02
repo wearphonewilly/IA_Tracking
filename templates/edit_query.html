@@ -1,11 +1,15 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
+    <meta name="robots" content="noindex, nofollow">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editar Query - Medición de IAs</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <meta name="robots" content="noindex, nofollow">
 </head>
+
 <body>
     <div class="container">
         <!-- Header -->
@@ -18,6 +22,9 @@
                         <p class="subtitle">Configura los parámetros de tracking</p>
                     </div>
                 </div>
+                <div class="header-actions">
+                    <button type="submit" form="query-form" class="btn btn-primary">Guardar Query</button>
+                </div>
             </div>
         </header>
 
@@ -26,7 +33,7 @@
             <!-- Información Básica -->
             <section class="form-section">
                 <h2>Información Básica</h2>
-                
+
                 <div class="form-group">
                     <label for="query-name">Nombre del Grupo</label>
                     <input type="text" id="query-name" name="name" placeholder="Ej: eSimFlag" required>
@@ -49,7 +56,8 @@
                 <h2>Prompts por Idioma</h2>
                 <div id="prompts-container"></div>
                 <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
-                    <select id="language-select" style="padding: 0.625rem 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem; font-size: 0.875rem;">
+                    <select id="language-select"
+                        style="padding: 0.625rem 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem; font-size: 0.875rem;">
                         <option value="Español">Español</option>
                         <option value="English">English</option>
                         <option value="Français">Français</option>
@@ -72,7 +80,7 @@
             <!-- Actions -->
             <div class="form-actions">
                 <button type="button" class="btn btn-secondary" onclick="goBack()">Cancelar</button>
-                <button type="submit" class="btn btn-primary">Actualizar</button>
+                <button type="submit" class="btn btn-primary">Guardar Query</button>
             </div>
         </form>
     </div>
@@ -82,5 +90,5 @@
     </script>
     <script src="{{ url_for('static', filename='js/edit_query.js') }}"></script>
 </body>
-</html>
 
+</html>
