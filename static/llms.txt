@@ -1,0 +1,45 @@
+# Dashboard de Medición de IAs
+
+## Descripción del Proyecto
+Este proyecto es un dashboard interactivo diseñado para monitorear la visibilidad de keywords en las respuestas de diferentes modelos de IA. Permite configurar queries, definir keywords y prompts, y ejecutar trackings periódicos para analizar cómo diferentes IAs posicionan y utilizan los términos clave.
+
+## Stack Tecnológico
+- **Backend:** Python con Flask
+- **Base de Datos:** SQLite (`dashboard.db`)
+- **Frontend:** HTML, CSS, JavaScript (ubicado en `templates/` y `static/`)
+- **APIs de IA:** Integraciones con Groq (Llama, Qwen), Google (Gemini), y OpenRouter (DeepSeek).
+
+## Estructura del Proyecto
+
+### Archivos Principales
+- **`app.py`**: El núcleo de la aplicación. Contiene:
+    - Configuración del servidor Flask.
+    - Definición de rutas y endpoints de la API (`/api/queries`, `/api/stats`, etc.).
+    - Lógica de conexión y gestión de la base de datos SQLite (`init_db`, `migrate_db`).
+    - Funciones para consultar las APIs de los modelos de IA (`query_groq`, `query_gemini`, `query_openrouter`).
+    - Lógica de cálculo de métricas de visibilidad y posición (`calculate_visibility`, `find_keyword_position`).
+- **`dashboard.db`**: Base de datos SQLite que almacena toda la configuración y resultados.
+- **`requirements.txt`**: Lista de dependencias de Python.
+- **`.env`**: Archivo de configuración para variables de entorno (API Keys: `GROQ_API_KEY`, `GOOGLE_API_KEY`, `OPEN_ROUTER_KEY`).
+- **`README.md`**: Documentación general de instalación y uso.
+
+### Directorios
+- **`templates/`**: Contiene las plantillas HTML para la interfaz de usuario.
+    - `dashboard.html`: Vista principal con métricas y lista de queries.
+    - `query_detail.html`: Vista detallada de los resultados de una query.
+    - `edit_query.html`: Formulario para crear o editar queries.
+- **`static/`**: Archivos estáticos como hojas de estilo CSS y scripts JavaScript del lado del cliente.
+
+## Modelo de Datos (SQLite)
+La base de datos `dashboard.db` contiene las siguientes tablas principales:
+- `queries`: Configuración principal de un grupo de seguimiento.
+- `keywords`: Palabras clave asociadas a una query.
+- `prompts`: Plantillas de preguntas por idioma (soportan placeholder `{keyword}`).
+- `query_models`: Relación de modelos de IA activados para una query.
+- `tracking_results`: Histórico de ejecuciones, guardando la respuesta de la IA, la posición de la keyword y la visibilidad calculada.
+
+## Funcionalidades Clave
+1. **Gestión de Queries**: CRUD completo para definir qué trackear.
+2. **Tracking Multi-modelo**: Ejecución simultánea de prompts en múltiples modelos de IA.
+3. **Análisis de Respuestas**: Detección automática de la presencia de keywords en las respuestas generadas.
+4. **Métricas**: Cálculo de "Visibilidad" (frecuencia y prominencia) y "Posición" (ubicación relativa en el texto).

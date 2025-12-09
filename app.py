@@ -109,6 +109,22 @@ def init_db():
     conn.commit()
     conn.close()
 
+def migrate_db():
+    """Migra la base de datos existente si es necesario"""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        # Verificar si la columna question_text existe
+        cursor.execute("PRAGMA table_info(tracking_results)")
+        columns = [row[1] for row in cursor.fetchall()]
+        if 'question_text' not in columns:
+            cursor.execute('ALTER TABLE tracking_results ADD COLUMN question_text TEXT')
+            cursor.execute('ALTER TABLE tracking_results ADD COLUMN language TEXT')
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Error en migración de BD: {e}")
+
 def query_groq(model, prompt, api_key):
     """Consulta a un modelo Groq"""
     client = Groq(api_key=api_key)
@@ -431,6 +447,7 @@ def track_query(query_id):
                             'error': str(e),
                             'success': False
                         })
+
     
     conn.commit()
     conn.close()
@@ -490,22 +507,10 @@ def get_stats():
         'total_models': total_models
     })
 
+# Inicializar y migrar base de datos al arrancar
+init_db()
+migrate_db()
+
 if __name__ == '__main__':
-    init_db()
-    # Migrar base de datos existente si es necesario
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        # Verificar si la columna question_text existe
-        cursor.execute("PRAGMA table_info(tracking_results)")
-        columns = [row[1] for row in cursor.fetchall()]
-        if 'question_text' not in columns:
-            cursor.execute('ALTER TABLE tracking_results ADD COLUMN question_text TEXT')
-            cursor.execute('ALTER TABLE tracking_results ADD COLUMN language TEXT')
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        print(f"Error en migración de BD: {e}")
-    
     app.run(debug=True, port=5000)
 
