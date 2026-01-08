@@ -27,7 +27,16 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
 # Base de datos
-DB_PATH = "dashboard.db"
+# Base de datos
+DB_FILE = "dashboard.db"
+
+# Detectar si el directorio actual es escribible
+if os.access('.', os.W_OK):
+    DB_PATH = DB_FILE
+else:
+    # En Vercel o entornos de solo lectura, usar /tmp
+    DB_PATH = os.path.join('/tmp', DB_FILE)
+    print(f"Entorno solo lectura detectado. Usando base de datos en: {DB_PATH}")
 
 # Configuración de API Keys
 # Configuración de API Keys
