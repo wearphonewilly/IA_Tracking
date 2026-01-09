@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.href = '/';
         return;
     }
-    
+
     await loadQuery();
     await loadTrackingResults();
 });
@@ -21,24 +21,24 @@ async function loadQuery() {
     try {
         const response = await fetch(`${API_BASE}/api/queries/${queryId}`);
         queryData = await response.json();
-        
+
         document.getElementById('query-title').textContent = queryData.name;
-        
+
         const stats = queryData.stats || {};
         const prompts = queryData.prompts || {};
-        
+
         // Contar total de preguntas (líneas en todos los prompts)
         let totalQuestions = 0;
         Object.values(prompts).forEach(promptText => {
             const lines = promptText.split('\n').filter(line => line.trim());
             totalQuestions += lines.length;
         });
-        
+
         const totalModels = queryData.models?.length || 0;
-        
-        document.getElementById('query-subtitle').textContent = 
+
+        document.getElementById('query-subtitle').textContent =
             `${totalQuestions} preguntas · ${totalModels} modelos`;
-        
+
         renderQueryContent();
     } catch (error) {
         console.error('Error cargando query:', error);
@@ -62,14 +62,14 @@ async function loadTrackingResults() {
 function renderQueryContent() {
     const container = document.getElementById('query-content');
     container.innerHTML = '';
-    
+
     const prompts = queryData.prompts || {};
     const keywords = queryData.keywords || [];
     const models = queryData.models || [];
-    
+
     // Agrupar prompts por pregunta (cada línea es una pregunta)
     const questions = [];
-    
+
     Object.entries(prompts).forEach(([language, promptText]) => {
         const questionLines = promptText.split('\n').filter(line => line.trim());
         questionLines.forEach((questionText) => {
@@ -79,7 +79,7 @@ function renderQueryContent() {
             });
         });
     });
-    
+
     if (questions.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
@@ -91,38 +91,38 @@ function renderQueryContent() {
         `;
         return;
     }
-    
+
     questions.forEach((question, questionIndex) => {
         const questionDiv = document.createElement('div');
         questionDiv.className = 'question-item';
-        
+
         // Crear fila de modelos para esta pregunta
         let modelsHtml = '';
         models.forEach(modelId => {
             // Obtener nombre del modelo de la lista de modelos disponibles
             const modelName = getModelName(modelId);
-            
+
             modelsHtml += `
                 <div class="model-result">
                     <div class="model-result-header">${escapeHtml(modelName)}</div>
                     ${keywords.map(keyword => {
-                        // Buscar resultado más reciente para esta pregunta, keyword y modelo
-                        const result = trackingResults
-                            .filter(r => 
-                                r.question_text === question.text &&
-                                r.keyword === keyword &&
-                                r.model_id === modelId
-                            )
-                            .sort((a, b) => new Date(b.tracked_at) - new Date(a.tracked_at))[0];
-                        
-                        const position = result && result.position !== null 
-                            ? result.position.toFixed(2) 
-                            : 'Sin datos';
-                        const visibility = result && result.visibility !== null 
-                            ? `${result.visibility.toFixed(2)}%` 
-                            : 'Pendiente';
-                        
-                        return `
+                // Buscar resultado más reciente para esta pregunta, keyword y modelo
+                const result = trackingResults
+                    .filter(r =>
+                        r.question_text === question.text &&
+                        r.keyword === keyword &&
+                        r.model_id === modelId
+                    )
+                    .sort((a, b) => new Date(b.tracked_at) - new Date(a.tracked_at))[0];
+
+                const position = result && result.position !== null
+                    ? result.position.toFixed(2)
+                    : 'Sin datos';
+                const visibility = result && result.visibility !== null
+                    ? `${result.visibility.toFixed(2)}%`
+                    : 'Pendiente';
+
+                return `
                             <div style="margin-bottom: 0.75rem;">
                                 <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 0.25rem;">Keyword</div>
                                 <span class="keyword-tag">${escapeHtml(keyword)}</span>
@@ -142,11 +142,11 @@ function renderQueryContent() {
                                 </div>
                             </div>
                         `;
-                    }).join('')}
+            }).join('')}
                 </div>
             `;
         });
-        
+
         questionDiv.innerHTML = `
             <div class="question-header">
                 <div>
@@ -162,7 +162,7 @@ function renderQueryContent() {
             </div>
             ${modelsHtml}
         `;
-        
+
         container.appendChild(questionDiv);
     });
 }
@@ -184,24 +184,54 @@ async function trackQuery() {
     if (!confirm('¿Deseas iniciar el tracking de esta query? Esto puede tomar unos minutos.')) {
         return;
     }
-    
+
+    // Obtener todos los botones de trackear y deshabilitarlos
+    const buttons = document.querySelectorAll('.btn-track');
+    const originalTexts = [];
+
+    console.log('Iniciando tracking...');
+
+    buttons.forEach((btn, index) => {
+        originalTexts[index] = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Trackeando...';
+    });
+
+    // Eliminado el bloqueo de otros botones
+
     try {
+        console.log(`Enviando petición POST a ${API_BASE}/api/queries/${queryId}/track`);
         const response = await fetch(`${API_BASE}/api/queries/${queryId}/track`, {
             method: 'POST'
         });
-        
+
+        console.log('Respuesta recibida:', response.status);
+
         if (response.ok) {
             const result = await response.json();
+            console.log('Tracking completado con éxito:', result);
+            // No necesitamos alertar porque ya se ve el resultado visualmente, pero mantenemos el alert por ahora
             alert('Tracking completado. Los resultados se han guardado.');
             await loadTrackingResults(); // Recargar resultados
-            renderQueryContent(); // Re-renderizar
+            renderQueryContent(); // Re-renderizar (esto reseteará los botones)
         } else {
             const error = await response.json();
+            console.error('Error en la respuesta:', error);
             alert(`Error: ${error.error || 'Error al realizar el tracking'}`);
+            // Restaurar botones si hubo error (si no hubo re-render)
+            buttons.forEach((btn, index) => {
+                btn.disabled = false;
+                btn.innerHTML = originalTexts[index];
+            });
         }
     } catch (error) {
         console.error('Error en tracking:', error);
         alert('Error al realizar el tracking');
+        // Restaurar botones
+        buttons.forEach((btn, index) => {
+            btn.disabled = false;
+            btn.innerHTML = originalTexts[index];
+        });
     }
 }
 
@@ -215,12 +245,12 @@ async function deleteQuery() {
     if (!confirm(`¿Estás seguro de que quieres eliminar la query "${queryData.name}"?`)) {
         return;
     }
-    
+
     try {
         const response = await fetch(`${API_BASE}/api/queries/${queryId}`, {
             method: 'DELETE'
         });
-        
+
         if (response.ok) {
             alert('Query eliminada correctamente');
             window.location.href = '/';

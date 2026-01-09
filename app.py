@@ -428,6 +428,8 @@ def track_query(query_id):
                         else:
                             continue
                         
+                        print(f"DEBUG: Consultando modelo {model_id} para keyword '{keyword}'...")
+                        
                         # Calcular posición y visibilidad
                         position = find_keyword_position(response, keyword)
                         visibility = calculate_visibility(response, keyword)
