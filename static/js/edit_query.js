@@ -9,7 +9,7 @@ let availableModels = [];
 // Cargar datos al iniciar
 document.addEventListener('DOMContentLoaded', async () => {
     await loadModels();
-    
+
     if (queryId && queryId !== '0') {
         await loadQuery(queryId);
         document.getElementById('page-title').textContent = 'Editar Query';
@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Añadir idioma por defecto
         addLanguage('Español');
     }
-    
+
     // Event listener para Enter en keyword input
     document.getElementById('keyword-input').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             addKeyword();
         }
     });
-    
+
     // Event listener para formulario
     document.getElementById('query-form').addEventListener('submit', handleSubmit);
 });
@@ -47,20 +47,20 @@ async function loadQuery(queryId) {
     try {
         const response = await fetch(`${API_BASE}/api/queries/${queryId}`);
         const query = await response.json();
-        
+
         // Llenar formulario
         document.getElementById('query-name').value = query.name || '';
-        
+
         keywords = query.keywords || [];
         renderKeywords();
-        
+
         prompts = query.prompts || {};
         if (Object.keys(prompts).length === 0) {
             addLanguage('Español');
         } else {
             renderPrompts();
         }
-        
+
         selectedModels = query.models || [];
         renderModels();
     } catch (error) {
@@ -73,7 +73,7 @@ async function loadQuery(queryId) {
 function addKeyword() {
     const input = document.getElementById('keyword-input');
     const keyword = input.value.trim();
-    
+
     if (keyword && !keywords.includes(keyword)) {
         keywords.push(keyword);
         renderKeywords();
@@ -85,7 +85,7 @@ function addKeyword() {
 function renderKeywords() {
     const container = document.getElementById('keywords-container');
     container.innerHTML = '';
-    
+
     keywords.forEach(keyword => {
         const tag = document.createElement('div');
         tag.className = 'keyword-tag-remove';
@@ -109,12 +109,12 @@ function addLanguage(language = null) {
         language = prompt('Introduce el nombre del idioma:');
         if (!language) return;
     }
-    
+
     if (prompts[language]) {
         alert('Este idioma ya existe');
         return;
     }
-    
+
     prompts[language] = '';
     renderPrompts();
 }
@@ -130,7 +130,7 @@ function addLanguageFromSelect() {
 function renderPrompts() {
     const container = document.getElementById('prompts-container');
     container.innerHTML = '';
-    
+
     Object.keys(prompts).forEach(language => {
         const promptItem = document.createElement('div');
         promptItem.className = 'prompt-item';
@@ -139,9 +139,9 @@ function renderPrompts() {
                 <label for="prompt-language-${escapeHtml(language)}" style="font-size: 0.875rem; font-weight: 500; margin-right: 0.75rem;">Idioma</label>
                 <select id="prompt-language-${escapeHtml(language)}" class="language-select" onchange="changeLanguagePrompt('${escapeHtml(language)}', this.value)" style="flex: 1; max-width: 200px;">
                     <option value="${escapeHtml(language)}">${escapeHtml(language)}</option>
-                    ${Object.keys(prompts).filter(l => l !== language).map(l => 
-                        `<option value="${escapeHtml(l)}">${escapeHtml(l)}</option>`
-                    ).join('')}
+                    ${Object.keys(prompts).filter(l => l !== language).map(l =>
+            `<option value="${escapeHtml(l)}">${escapeHtml(l)}</option>`
+        ).join('')}
                 </select>
                 <div class="prompt-actions">
                     <button type="button" class="btn-icon" onclick="deletePrompt('${escapeHtml(language)}')" title="Eliminar">
@@ -185,7 +185,7 @@ function deletePrompt(language) {
         alert('Debes tener al menos un idioma');
         return;
     }
-    
+
     if (confirm(`¿Eliminar el prompt en ${language}?`)) {
         delete prompts[language];
         renderPrompts();
@@ -196,12 +196,12 @@ function deletePrompt(language) {
 function renderModels() {
     const container = document.getElementById('models-container');
     container.innerHTML = '';
-    
+
     availableModels.forEach(model => {
         const modelItem = document.createElement('div');
         modelItem.className = 'model-item';
         const isChecked = selectedModels.includes(model.id);
-        
+
         modelItem.innerHTML = `
             <input 
                 type="checkbox" 
@@ -229,53 +229,52 @@ function toggleModel(modelId) {
 }
 
 // Manejar submit
-async function handleSubmit(e) {
-    e.preventDefault();
-    
+// Función para guardar
+async function saveQuery(redirectUrl = null) {
     const name = document.getElementById('query-name').value.trim();
-    
+
     if (!name) {
         alert('Por favor, introduce un nombre para la query');
-        return;
+        return false;
     }
-    
+
     if (keywords.length === 0) {
         alert('Por favor, añade al menos una keyword');
-        return;
+        return false;
     }
-    
+
     if (Object.keys(prompts).length === 0) {
         alert('Por favor, añade al menos un prompt');
-        return;
+        return false;
     }
-    
+
     // Verificar que todos los prompts tengan texto
     for (const [language, promptText] of Object.entries(prompts)) {
         if (!promptText.trim()) {
             alert(`Por favor, completa el prompt en ${language}`);
-            return;
+            return false;
         }
     }
-    
+
     if (selectedModels.length === 0) {
         alert('Por favor, selecciona al menos un modelo');
-        return;
+        return false;
     }
-    
+
     const data = {
         name,
         keywords,
         prompts,
         models: selectedModels
     };
-    
+
     try {
-        const url = queryId && queryId !== '0' 
+        const url = queryId && queryId !== '0'
             ? `${API_BASE}/api/queries/${queryId}`
             : `${API_BASE}/api/queries`;
-        
+
         const method = queryId && queryId !== '0' ? 'PUT' : 'POST';
-        
+
         const response = await fetch(url, {
             method,
             headers: {
@@ -283,29 +282,44 @@ async function handleSubmit(e) {
             },
             body: JSON.stringify(data)
         });
-        
+
         if (response.ok) {
             const result = await response.json();
-            alert(queryId && queryId !== '0' 
-                ? 'Query actualizada correctamente'
-                : 'Query creada correctamente'
-            );
-            window.location.href = '/';
+            // Solo mostrar alerta si no vamos a redireccionar inmediatamente o si es un guardado explícito
+            if (!redirectUrl) {
+                alert(queryId && queryId !== '0'
+                    ? 'Query actualizada correctamente'
+                    : 'Query creada correctamente'
+                );
+            }
+
+            if (redirectUrl) {
+                window.location.href = redirectUrl;
+            }
+            return true;
         } else {
             const error = await response.json();
             alert(`Error: ${error.error || 'Error al guardar la query'}`);
+            return false;
         }
     } catch (error) {
         console.error('Error guardando query:', error);
         alert('Error al guardar la query');
+        return false;
     }
 }
 
-// Volver atrás
-function goBack() {
-    if (confirm('¿Seguro que quieres salir sin guardar?')) {
-        window.location.href = '/';
-    }
+// Manejar submit
+async function handleSubmit(e) {
+    e.preventDefault();
+    await saveQuery('/');
+}
+
+// Volver atrás (guardando)
+async function goBack() {
+    // Intentar guardar antes de salir
+    // Si la validación falla (devuelve false), no salimos
+    await saveQuery('/');
 }
 
 // Utilidades

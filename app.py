@@ -48,7 +48,8 @@ AVAILABLE_MODELS = [
     {"id": "meta-llama/llama-4-scout-17b-16e-instruct", "name": "Llama 4 Scout", "provider": "groq"},
     {"id": "qwen/qwen3-32b", "name": "Qwen 3", "provider": "groq"},
     {"id": "gemini-2.0-flash", "name": "Gemini 2.0 Flash", "provider": "google"},
-    {"id": "deepseek-chat", "name": "DeepSeek Chat", "provider": "openrouter"}
+    {"id": "deepseek-chat", "name": "DeepSeek Chat", "provider": "openrouter"},
+    {"id": "openai/gpt-5.2-chat", "name": "GPT 5.2 (via OpenRouter)", "provider": "openrouter"}
 ]
 
 def init_db():
@@ -189,29 +190,40 @@ def query_openrouter(model, prompt, api_key):
     return content, elapsed
 
 def find_keyword_position(response, keyword):
-    """Encuentra la posición de una keyword en la respuesta (0-1)"""
+    """Encuentra la posición de una keyword basada en el número de párrafo (1-indexado)"""
     response_lower = response.lower()
     keyword_lower = keyword.lower()
-    position = response_lower.find(keyword_lower)
-    if position == -1:
+    pos_idx = response_lower.find(keyword_lower)
+    
+    if pos_idx == -1:
         return None
-    # Normalizar a 0-1 (posición / longitud total)
-    return round(position / len(response), 4)
+        
+    # Contar saltos de línea antes de la coincidencia para determinar el "párrafo"
+    # Se suma 1 porque empezamos en el párrafo 1
+    paragraph_num = response_lower[:pos_idx].count('\n') + 1
+    return paragraph_num
 
 def calculate_visibility(response, keyword):
     """Calcula la visibilidad de una keyword (0-100%)"""
     response_lower = response.lower()
     keyword_lower = keyword.lower()
     count = response_lower.count(keyword_lower)
+    
     if count == 0:
         return 0.0
-    # Visibilidad basada en frecuencia y posición
-    position = find_keyword_position(response, keyword)
-    if position is None:
-        return 0.0
-    # Fórmula simple: frecuencia * (1 - posición temprana es mejor)
-    visibility = min(100.0, count * 10 * (1 - position))
+        
+    # Encontrar posición relativa (0-1) para el cálculo de visibilidad
+    pos_idx = response_lower.find(keyword_lower)
+    relative_pos = pos_idx / len(response)
+    
+    # Visibilidad basada en frecuencia y posición (cuanto más arriba mejor)
+    # Fórmula: (frecuencia * 20) * (1 - position)
+    # Ejemplo: 1 vez al principio = 20 * 1 = 20%
+    # Ejemplo: 5 veces al principio = 100%
+    visibility = min(100.0, count * 20 * (1 - relative_pos))
     return round(visibility, 2)
+
+
 
 # Rutas de la API
 
@@ -265,6 +277,48 @@ def get_queries():
             'total_keywords': stats[0] or 0,
             'total_models': stats[1] or 0
         }
+        
+        # Obtener métricas por keyword (último resultado)
+        cursor.execute('''
+            SELECT keyword, visibility, position, tracked_at
+            FROM tracking_results
+            WHERE query_id = ?
+            ORDER BY tracked_at DESC
+        ''', (query['id'],))
+        
+        results = cursor.fetchall()
+        keyword_metrics = {}
+        
+        latest_results_by_keyword = {} 
+        
+        for row in results:
+            kw = row[0]
+            vis = row[1]
+            # row[2] es position, pero tenemos que asegurarnos de que la consulta SQL lo traiga
+            # En la versión anterior de tracking_results ya debía tener la columna position
+            pos = row[2] if len(row) > 2 else None
+            
+            if kw not in latest_results_by_keyword:
+                latest_results_by_keyword[kw] = {'vis': [], 'pos': []}
+            
+            latest_results_by_keyword[kw]['vis'].append(vis)
+            if pos is not None:
+                latest_results_by_keyword[kw]['pos'].append(pos)
+
+        for kw, data in latest_results_by_keyword.items():
+            # Tomamos hasta 5 resultados más recientes
+            recent_vis = data['vis'][:5]
+            recent_pos = data['pos'][:5]
+            
+            avg_vis = sum(recent_vis) / len(recent_vis) if recent_vis else 0
+            avg_pos = sum(recent_pos) / len(recent_pos) if recent_pos else 0
+            
+            keyword_metrics[kw] = {
+                'avg_visibility': round(avg_vis, 1),
+                'avg_position': round(avg_pos, 1) if avg_pos > 0 else '-'
+            }
+            
+        query['keyword_metrics'] = keyword_metrics
     
     conn.close()
     return jsonify(queries)
