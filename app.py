@@ -11,7 +11,9 @@ import time
 import os
 import requests
 from datetime import datetime
+from datetime import datetime
 from groq import Groq
+from openai import OpenAI
 from google import generativeai as genai
 from dotenv import load_dotenv
 
@@ -41,15 +43,80 @@ else:
 # Configuración de API Keys
 # Configuración de API Keys
 OPEN_ROUTER_KEY = os.getenv("OPEN_ROUTER_KEY")
+PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # Modelos disponibles
+# Modelos disponibles
 AVAILABLE_MODELS = [
-    {"id": "meta-llama/llama-4-maverick-17b-128e-instruct", "name": "Llama 4 Maverick", "provider": "groq"},
-    {"id": "meta-llama/llama-4-scout-17b-16e-instruct", "name": "Llama 4 Scout", "provider": "groq"},
-    {"id": "qwen/qwen3-32b", "name": "Qwen 3", "provider": "groq"},
+    {
+        "id": "meta-llama/llama-4-maverick-17b-128e-instruct", 
+        "name": "Llama 4 Maverick", 
+        "provider": "groq",
+        "params": {
+            "temperature": 1,
+            "max_completion_tokens": 1024,
+            "top_p": 1
+        }
+    },
+    {
+        "id": "meta-llama/llama-4-scout-17b-16e-instruct", 
+        "name": "Llama 4 Scout", 
+        "provider": "groq",
+        "params": {
+            "temperature": 1,
+            "max_completion_tokens": 1024,
+            "top_p": 1
+        }
+    },
+    {
+        "id": "qwen/qwen3-32b", 
+        "name": "Qwen 3", 
+        "provider": "groq",
+        "params": {
+            "temperature": 0.6,
+            "max_completion_tokens": 4096,
+            "top_p": 0.95,
+            "reasoning_effort": "default"
+        }
+    },
+    {
+        "id": "llama-3.1-8b-instant",
+        "name": "Llama 3.1 8B Instant",
+        "provider": "groq",
+        "params": {
+            "temperature": 1,
+            "max_completion_tokens": 1024,
+            "top_p": 1
+        }
+    },
+    {
+        "id": "openai/gpt-oss-120b",
+        "name": "SambaNova GPT-OSS 120B",
+        "provider": "groq",
+        "params": {
+            "temperature": 1,
+            "max_completion_tokens": 8192,
+            "top_p": 1,
+            "reasoning_effort": "medium"
+        }
+    },
+    {
+        "id": "gpt-5.2",
+        "name": "GPT 5.2",
+        "provider": "openai",
+        "params": {
+            "temperature": 1,
+            "max_completion_tokens": 4096,
+            "top_p": 1,
+            "reasoning_effort": "medium"
+        }
+    },
     {"id": "gemini-2.0-flash", "name": "Gemini 2.0 Flash", "provider": "google"},
     {"id": "deepseek-chat", "name": "DeepSeek Chat", "provider": "openrouter"},
-    {"id": "openai/gpt-5.2-chat", "name": "GPT 5.2 (via OpenRouter)", "provider": "openrouter"}
+    {"id": "openai/gpt-5.2-chat", "name": "GPT 5.2 (via OpenRouter)", "provider": "openrouter"},
+    {"id": "sonar-pro", "name": "Perplexity Sonar Pro", "provider": "perplexity"},
+    {"id": "sonar-reasoning-pro", "name": "Perplexity Sonar Reasoning Pro", "provider": "perplexity"}
 ]
 
 def init_db():
@@ -135,16 +202,35 @@ def migrate_db():
     except Exception as e:
         print(f"Error en migración de BD: {e}")
 
-def query_groq(model, prompt, api_key):
-    """Consulta a un modelo Groq"""
+def query_groq(model, prompt, api_key, params=None):
+    """Consulta a un modelo Groq con parámetros personalizados"""
     client = Groq(api_key=api_key)
+    
+    # Parámetros por defecto
+    request_params = {
+        "messages": [{"role": "user", "content": prompt}],
+        "model": model,
+        "temperature": 0.2,
+        "max_tokens": 1024,
+        "stream": False # Desactivamos stream para simplificar la lógica actual
+    }
+    
+    # Sobreescribir con parámetros específicos del modelo si existen
+    if params:
+        if "temperature" in params: request_params["temperature"] = params["temperature"]
+        if "top_p" in params: request_params["top_p"] = params["top_p"]
+        
+        # Mapear max_completion_tokens a max_tokens para compatibilidad, o usar si la librería lo soporta
+        # La librería groq recién actualizada debería soportar max_completion_tokens
+        if "max_completion_tokens" in params: 
+            request_params["max_completion_tokens"] = params["max_completion_tokens"]
+            # Removemos max_tokens si usamos max_completion_tokens para evitar conflictos
+            if "max_tokens" in request_params: del request_params["max_tokens"]
+            
+        if "reasoning_effort" in params: request_params["reasoning_effort"] = params["reasoning_effort"]
+
     start = time.time()
-    chat_completion = client.chat.completions.create(
-        messages=[{"role": "user", "content": prompt}],
-        model=model,
-        temperature=0.2,
-        max_tokens=1024
-    )
+    chat_completion = client.chat.completions.create(**request_params)
     elapsed = round(time.time() - start, 3)
     content = chat_completion.choices[0].message.content
     if not content or content.strip() == "":
@@ -180,6 +266,56 @@ def query_openrouter(model, prompt, api_key):
     }
     start = time.time()
     response = requests.post("https://openrouter.ai/api/v1/chat/completions", 
+                           headers=headers, json=data, timeout=60)
+    elapsed = round(time.time() - start, 3)
+    response.raise_for_status()
+    result = response.json()
+    content = result["choices"][0]["message"]["content"]
+    if not content or content.strip() == "":
+        raise ValueError("Respuesta vacía o nula")
+    return content, elapsed
+
+def query_openai(model, prompt, api_key, params=None):
+    """Consulta a un modelo OpenAI"""
+    client = OpenAI(api_key=api_key)
+    
+    # Parámetros por defecto
+    request_params = {
+        "messages": [{"role": "user", "content": prompt}],
+        "model": model,
+        "temperature": 1,
+        "max_tokens": 2048
+    }
+
+    if params:
+        if "temperature" in params: request_params["temperature"] = params["temperature"]
+        if "top_p" in params: request_params["top_p"] = params["top_p"]
+        if "max_completion_tokens" in params: request_params["max_completion_tokens"] = params["max_completion_tokens"]
+        if "max_tokens" in request_params and "max_completion_tokens" in params: del request_params["max_tokens"]
+        if "reasoning_effort" in params: request_params["reasoning_effort"] = params["reasoning_effort"]
+
+    start = time.time()
+    chat_completion = client.chat.completions.create(**request_params)
+    elapsed = round(time.time() - start, 3)
+    content = chat_completion.choices[0].message.content
+    if not content or content.strip() == "":
+        raise ValueError("Respuesta vacía o nula")
+    return content, elapsed
+
+def query_perplexity(model, prompt, api_key):
+    """Consulta a un modelo Perplexity"""
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "model": model,
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.2,
+        "max_tokens": 1024
+    }
+    start = time.time()
+    response = requests.post("https://api.perplexity.ai/chat/completions", 
                            headers=headers, json=data, timeout=60)
     elapsed = round(time.time() - start, 3)
     response.raise_for_status()
@@ -472,13 +608,20 @@ def track_query(query_id):
                         
                         # Consultar según el provider
                         if model_info['provider'] == 'groq':
-                            response, elapsed = query_groq(model_id, prompt, GROQ_API_KEY)
+                            # Extraer parámetros específicos del modelo si existen
+                            params = model_info.get('params', {})
+                            response, elapsed = query_groq(model_id, prompt, GROQ_API_KEY, params)
+                        elif model_info['provider'] == 'openai':
+                            params = model_info.get('params', {})
+                            response, elapsed = query_openai(model_id, prompt, OPENAI_API_KEY, params)
                         elif model_info['provider'] == 'google':
                             response, elapsed = query_gemini(prompt, GOOGLE_API_KEY)
                         elif model_info['provider'] == 'openrouter':
                             # Mapear el modelo de openrouter
                             openrouter_model = "deepseek/deepseek-chat" if model_id == "deepseek-chat" else model_id
                             response, elapsed = query_openrouter(openrouter_model, prompt, OPEN_ROUTER_KEY)
+                        elif model_info['provider'] == 'perplexity':
+                            response, elapsed = query_perplexity(model_id, prompt, PERPLEXITY_API_KEY)
                         else:
                             continue
                         
