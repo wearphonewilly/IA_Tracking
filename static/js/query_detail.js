@@ -200,8 +200,14 @@ async function trackQuery() {
     // Eliminado el bloqueo de otros botones
 
     try {
-        console.log(`Enviando petición POST a ${API_BASE}/api/queries/${queryId}/track`);
-        const response = await fetch(`${API_BASE}/api/queries/${queryId}/track`, {
+        const url = `${API_BASE}/api/queries/${queryId}/track`;
+        console.log('--- Tracking Request Start ---');
+        console.log('URL:', url);
+        console.log('Method: POST');
+        console.log('Body: {} (No payload for this request)');
+
+        console.log(`Enviando petición POST a ${url}`);
+        const response = await fetch(url, {
             method: 'POST'
         });
 
@@ -209,6 +215,10 @@ async function trackQuery() {
 
         if (response.ok) {
             const result = await response.json();
+            console.log('--- Tracking Response Data ---');
+            console.log(result);
+            console.log('--- Tracking Request End ---');
+
             console.log('Tracking completado con éxito:', result);
             // No necesitamos alertar porque ya se ve el resultado visualmente, pero mantenemos el alert por ahora
             alert('Tracking completado. Los resultados se han guardado.');
