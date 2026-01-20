@@ -551,14 +551,19 @@ def track_query(query_id):
     return jsonify({'results': results, 'message': 'Tracking completado'})
 
 @app.route('/api/queries/<query_id>/results', methods=['GET'])
+@app.route('/api/queries/<query_id>/results', methods=['GET'])
 def get_tracking_results(query_id):
     """Obtiene los resultados de tracking de una query"""
-    results_ref = db.collection('tracking_results').where('query_id', '==', query_id).order_by('tracked_at', direction=firestore.Query.DESCENDING)
+    # Nota: Eliminamos order_by para evitar requerir un índice compuesto
+    results_ref = db.collection('tracking_results').where('query_id', '==', query_id).limit(200)
     docs = results_ref.stream()
     
     results = []
     for doc in docs:
         results.append(doc.to_dict())
+        
+    # Ordenar en memoria
+    results.sort(key=lambda x: x.get('tracked_at', datetime.min), reverse=True)
         
     return jsonify(results)
 
@@ -585,7 +590,8 @@ def get_stats():
     # Aquí, por simplicidad para la migración, haremos una consulta limitada o lo dejamos en 0 si es muy costoso
     # Una opción segura para un dashboard pequeño es traer los últimos 100 resultados
     
-    recent_results = results_coll.order_by('tracked_at', direction=firestore.Query.DESCENDING).limit(100).stream()
+    # Eliminamos el order_by para evitar problemas de índices si se añaden filtros futuros
+    recent_results = results_coll.limit(100).stream()
     vis_sum = 0
     vis_count = 0
     unique_models = set()
