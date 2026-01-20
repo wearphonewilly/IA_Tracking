@@ -5,13 +5,14 @@ Backend Flask para el Dashboard de Medición de IAs
 
 from flask import Flask, render_template, jsonify, request
 from flask_cors import CORS
-import sqlite3
 import json
 import time
 import os
 import requests
 from datetime import datetime
-from datetime import datetime
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import firestore
 from groq import Groq
 from openai import OpenAI
 from google import generativeai as genai
@@ -25,22 +26,39 @@ CORS(app)
 
 # Configuración de API Keys
 # Configuración de API Keys
+# Configuración de API Keys
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
-# Base de datos
-# Base de datos
-DB_FILE = "dashboard.db"
+# Inicialización de Firebase
+# Inicialización de Firebase
+try:
+    # Intenta cargar desde archivo local (desarrollo)
+    if os.path.exists("serviceAccountKey.json"):
+        cred = credentials.Certificate("serviceAccountKey.json")
+    # Intenta cargar desde variable de entorno (producción/Vercel)
+    elif os.getenv("FIREBASE_SERVICE_ACCOUNT"):
+        # La variable de entorno debe contener el JSON completo como string
+        # En Vercel, a veces es mejor usar base64 si hay problemas con saltos de línea,
+        # pero JSON string directo suele funcionar si se copia con cuidado.
+        service_account_info = json.loads(os.getenv("FIREBASE_SERVICE_ACCOUNT"))
+        cred = credentials.Certificate(service_account_info)
+    else:
+        raise Exception("No se encontró serviceAccountKey.json ni variable FIREBASE_SERVICE_ACCOUNT")
+        
+    firebase_admin.initialize_app(cred)
+    db = firestore.client()
+    print("Firebase inicializado correctamente.")
+except Exception as e:
+    print(f"Error al inicializar Firebase: {e}")
+    # Si falla, intentamos conectar sin credenciales explícitas (ej. si estamos en Google Cloud environment)
+    # o simplemente dejamos que falle más tarde si no hay auth
+    try:
+        db = firestore.client()
+    except:
+        print("No se pudo conectar a Firestore.")
 
-# Detectar si el directorio actual es escribible
-if os.access('.', os.W_OK):
-    DB_PATH = DB_FILE
-else:
-    # En Vercel o entornos de solo lectura, usar /tmp
-    DB_PATH = os.path.join('/tmp', DB_FILE)
-    print(f"Entorno solo lectura detectado. Usando base de datos en: {DB_PATH}")
 
-# Configuración de API Keys
 # Configuración de API Keys
 OPEN_ROUTER_KEY = os.getenv("OPEN_ROUTER_KEY")
 PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY")
@@ -119,88 +137,7 @@ AVAILABLE_MODELS = [
     {"id": "sonar-reasoning-pro", "name": "Perplexity Sonar Reasoning Pro", "provider": "perplexity"}
 ]
 
-def init_db():
-    """Inicializa la base de datos"""
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    
-    # Tabla de queries
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS queries (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    # Tabla de keywords
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS keywords (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            query_id INTEGER NOT NULL,
-            keyword TEXT NOT NULL,
-            FOREIGN KEY (query_id) REFERENCES queries(id) ON DELETE CASCADE
-        )
-    ''')
-    
-    # Tabla de prompts por idioma
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS prompts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            query_id INTEGER NOT NULL,
-            language TEXT NOT NULL,
-            prompt_text TEXT NOT NULL,
-            FOREIGN KEY (query_id) REFERENCES queries(id) ON DELETE CASCADE
-        )
-    ''')
-    
-    # Tabla de modelos seleccionados por query
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS query_models (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            query_id INTEGER NOT NULL,
-            model_id TEXT NOT NULL,
-            FOREIGN KEY (query_id) REFERENCES queries(id) ON DELETE CASCADE
-        )
-    ''')
-    
-    # Tabla de tracking results
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS tracking_results (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            query_id INTEGER NOT NULL,
-            keyword TEXT NOT NULL,
-            model_id TEXT NOT NULL,
-            prompt_text TEXT NOT NULL,
-            question_text TEXT NOT NULL,
-            language TEXT NOT NULL,
-            response_text TEXT NOT NULL,
-            position REAL,
-            visibility REAL,
-            tracked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (query_id) REFERENCES queries(id) ON DELETE CASCADE
-        )
-    ''')
-    
-    conn.commit()
-    conn.close()
 
-def migrate_db():
-    """Migra la base de datos existente si es necesario"""
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        # Verificar si la columna question_text existe
-        cursor.execute("PRAGMA table_info(tracking_results)")
-        columns = [row[1] for row in cursor.fetchall()]
-        if 'question_text' not in columns:
-            cursor.execute('ALTER TABLE tracking_results ADD COLUMN question_text TEXT')
-            cursor.execute('ALTER TABLE tracking_results ADD COLUMN language TEXT')
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        print(f"Error en migración de BD: {e}")
 
 def query_groq(model, prompt, api_key, params=None):
     """Consulta a un modelo Groq con parámetros personalizados"""
@@ -368,12 +305,12 @@ def index():
     """Página principal del dashboard"""
     return render_template('dashboard.html')
 
-@app.route('/query/<int:query_id>')
+@app.route('/query/<query_id>')
 def query_detail(query_id):
     """Página de detalle de query"""
     return render_template('query_detail.html')
 
-@app.route('/query/<int:query_id>/edit')
+@app.route('/query/<query_id>/edit')
 def edit_query(query_id):
     """Página de edición de query"""
     return render_template('edit_query.html')
@@ -381,68 +318,48 @@ def edit_query(query_id):
 @app.route('/api/queries', methods=['GET'])
 def get_queries():
     """Obtiene todas las queries"""
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
+    queries_ref = db.collection('queries').order_by('updated_at', direction=firestore.Query.DESCENDING)
+    docs = queries_ref.stream()
     
-    cursor.execute('SELECT * FROM queries ORDER BY updated_at DESC')
-    queries = [dict(row) for row in cursor.fetchall()]
-    
-    for query in queries:
-        # Obtener keywords
-        cursor.execute('SELECT keyword FROM keywords WHERE query_id = ?', (query['id'],))
-        query['keywords'] = [row[0] for row in cursor.fetchall()]
+    queries = []
+    for doc in docs:
+        query_data = doc.to_dict()
+        query_data['id'] = doc.id
         
-        # Obtener prompts
-        cursor.execute('SELECT language, prompt_text FROM prompts WHERE query_id = ?', (query['id'],))
-        query['prompts'] = {row[0]: row[1] for row in cursor.fetchall()}
+        # En Firestore guardamos keywords, models y prompts dentro del documento
+        # Aseguramos valores por defecto si no existen
+        query_data['keywords'] = query_data.get('keywords', [])
+        query_data['models'] = query_data.get('models', [])
+        query_data['prompts'] = query_data.get('prompts', {})
         
-        # Obtener modelos seleccionados
-        cursor.execute('SELECT model_id FROM query_models WHERE query_id = ?', (query['id'],))
-        query['models'] = [row[0] for row in cursor.fetchall()]
+        # Obtener estadísticas (simplificado para evitar N lecturas excesivas si es posible)
+        # Para métricas exactas, tendríamos que consultar la colección tracking_results
         
-        # Obtener estadísticas de tracking
-        cursor.execute('''
-            SELECT COUNT(DISTINCT keyword) as total_keywords,
-                   COUNT(DISTINCT model_id) as total_models
-            FROM tracking_results
-            WHERE query_id = ?
-        ''', (query['id'],))
-        stats = cursor.fetchone()
-        query['stats'] = {
-            'total_keywords': stats[0] or 0,
-            'total_models': stats[1] or 0
-        }
+        # Consultar últimos resultados para métricas
+        results_ref = db.collection('tracking_results').where('query_id', '==', doc.id).order_by('tracked_at', direction=firestore.Query.DESCENDING).limit(50)
+        results_docs = results_ref.stream()
         
-        # Obtener métricas por keyword (último resultado)
-        cursor.execute('''
-            SELECT keyword, visibility, position, tracked_at
-            FROM tracking_results
-            WHERE query_id = ?
-            ORDER BY tracked_at DESC
-        ''', (query['id'],))
-        
-        results = cursor.fetchall()
+        results = []
+        for r_doc in results_docs:
+            results.append(r_doc.to_dict())
+            
         keyword_metrics = {}
+        latest_results_by_keyword = {}
+        unique_models = set()
         
-        latest_results_by_keyword = {} 
-        
-        for row in results:
-            kw = row[0]
-            vis = row[1]
-            # row[2] es position, pero tenemos que asegurarnos de que la consulta SQL lo traiga
-            # En la versión anterior de tracking_results ya debía tener la columna position
-            pos = row[2] if len(row) > 2 else None
+        for r in results:
+            kw = r.get('keyword')
+            model_id = r.get('model_id')
+            unique_models.add(model_id)
             
             if kw not in latest_results_by_keyword:
                 latest_results_by_keyword[kw] = {'vis': [], 'pos': []}
-            
-            latest_results_by_keyword[kw]['vis'].append(vis)
-            if pos is not None:
-                latest_results_by_keyword[kw]['pos'].append(pos)
-
+                
+            latest_results_by_keyword[kw]['vis'].append(r.get('visibility', 0))
+            if r.get('position') is not None:
+                latest_results_by_keyword[kw]['pos'].append(r.get('position'))
+        
         for kw, data in latest_results_by_keyword.items():
-            # Tomamos hasta 5 resultados más recientes
             recent_vis = data['vis'][:5]
             recent_pos = data['pos'][:5]
             
@@ -454,136 +371,93 @@ def get_queries():
                 'avg_position': round(avg_pos, 1) if avg_pos > 0 else '-'
             }
             
-        query['keyword_metrics'] = keyword_metrics
-    
-    conn.close()
+        query_data['keyword_metrics'] = keyword_metrics
+        query_data['stats'] = {
+            'total_keywords': len(query_data['keywords']),
+            'total_models': len(unique_models)
+        }
+        
+        queries.append(query_data)
+
     return jsonify(queries)
 
-@app.route('/api/queries/<int:query_id>', methods=['GET'])
+@app.route('/api/queries/<query_id>', methods=['GET'])
 def get_query(query_id):
     """Obtiene una query específica"""
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
+    doc_ref = db.collection('queries').document(query_id)
+    doc = doc_ref.get()
     
-    cursor.execute('SELECT * FROM queries WHERE id = ?', (query_id,))
-    query = cursor.fetchone()
-    if not query:
-        conn.close()
+    if not doc.exists:
         return jsonify({'error': 'Query no encontrada'}), 404
+        
+    query_data = doc.to_dict()
+    query_data['id'] = doc.id
+    # Asegurar campos
+    query_data['keywords'] = query_data.get('keywords', [])
+    query_data['models'] = query_data.get('models', [])
+    query_data['prompts'] = query_data.get('prompts', {})
     
-    query = dict(query)
-    
-    # Obtener keywords
-    cursor.execute('SELECT keyword FROM keywords WHERE query_id = ?', (query_id,))
-    query['keywords'] = [row[0] for row in cursor.fetchall()]
-    
-    # Obtener prompts
-    cursor.execute('SELECT language, prompt_text FROM prompts WHERE query_id = ?', (query_id,))
-    query['prompts'] = {row[0]: row[1] for row in cursor.fetchall()}
-    
-    # Obtener modelos seleccionados
-    cursor.execute('SELECT model_id FROM query_models WHERE query_id = ?', (query_id,))
-    query['models'] = [row[0] for row in cursor.fetchall()]
-    
-    conn.close()
-    return jsonify(query)
+    return jsonify(query_data)
 
 @app.route('/api/queries', methods=['POST'])
 def create_query():
     """Crea una nueva query"""
     data = request.json
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
     
-    # Crear query
-    cursor.execute('INSERT INTO queries (name) VALUES (?)', (data.get('name', ''),))
-    query_id = cursor.lastrowid
+    new_query = {
+        'name': data.get('name', ''),
+        'keywords': data.get('keywords', []),
+        'prompts': data.get('prompts', {}),
+        'models': data.get('models', []),
+        'created_at': datetime.now(),
+        'updated_at': datetime.now()
+    }
     
-    # Añadir keywords
-    for keyword in data.get('keywords', []):
-        cursor.execute('INSERT INTO keywords (query_id, keyword) VALUES (?, ?)', (query_id, keyword))
+    update_time, doc_ref = db.collection('queries').add(new_query)
     
-    # Añadir prompts
-    for language, prompt_text in data.get('prompts', {}).items():
-        cursor.execute('INSERT INTO prompts (query_id, language, prompt_text) VALUES (?, ?, ?)',
-                      (query_id, language, prompt_text))
-    
-    # Añadir modelos
-    for model_id in data.get('models', []):
-        cursor.execute('INSERT INTO query_models (query_id, model_id) VALUES (?, ?)',
-                      (query_id, model_id))
-    
-    conn.commit()
-    conn.close()
-    return jsonify({'id': query_id, 'message': 'Query creada correctamente'}), 201
+    return jsonify({'id': doc_ref.id, 'message': 'Query creada correctamente'}), 201
 
-@app.route('/api/queries/<int:query_id>', methods=['PUT'])
+@app.route('/api/queries/<query_id>', methods=['PUT'])
 def update_query(query_id):
     """Actualiza una query existente"""
     data = request.json
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
+    doc_ref = db.collection('queries').document(query_id)
     
-    # Actualizar nombre
-    cursor.execute('UPDATE queries SET name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-                  (data.get('name', ''), query_id))
+    update_data = {
+        'name': data.get('name', ''),
+        'keywords': data.get('keywords', []),
+        'prompts': data.get('prompts', {}),
+        'models': data.get('models', []),
+        'updated_at': datetime.now()
+    }
     
-    # Eliminar keywords existentes y añadir nuevas
-    cursor.execute('DELETE FROM keywords WHERE query_id = ?', (query_id,))
-    for keyword in data.get('keywords', []):
-        cursor.execute('INSERT INTO keywords (query_id, keyword) VALUES (?, ?)', (query_id, keyword))
+    doc_ref.update(update_data)
     
-    # Eliminar prompts existentes y añadir nuevos
-    cursor.execute('DELETE FROM prompts WHERE query_id = ?', (query_id,))
-    for language, prompt_text in data.get('prompts', {}).items():
-        cursor.execute('INSERT INTO prompts (query_id, language, prompt_text) VALUES (?, ?, ?)',
-                      (query_id, language, prompt_text))
-    
-    # Eliminar modelos existentes y añadir nuevos
-    cursor.execute('DELETE FROM query_models WHERE query_id = ?', (query_id,))
-    for model_id in data.get('models', []):
-        cursor.execute('INSERT INTO query_models (query_id, model_id) VALUES (?, ?)',
-                      (query_id, model_id))
-    
-    conn.commit()
-    conn.close()
     return jsonify({'message': 'Query actualizada correctamente'})
 
-@app.route('/api/queries/<int:query_id>', methods=['DELETE'])
+@app.route('/api/queries/<query_id>', methods=['DELETE'])
 def delete_query(query_id):
     """Elimina una query"""
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute('DELETE FROM queries WHERE id = ?', (query_id,))
-    conn.commit()
-    conn.close()
+    db.collection('queries').document(query_id).delete()
+    # Opcional: Eliminar resultados asociados
+    # results = db.collection('tracking_results').where('query_id', '==', query_id).stream()
+    # for r in results:
+    #     r.reference.delete()
     return jsonify({'message': 'Query eliminada correctamente'})
 
-@app.route('/api/queries/<int:query_id>/track', methods=['POST'])
+@app.route('/api/queries/<query_id>/track', methods=['POST'])
 def track_query(query_id):
     """Realiza tracking de una query"""
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
+    doc_ref = db.collection('queries').document(query_id)
+    doc = doc_ref.get()
     
-    # Obtener datos de la query
-    cursor.execute('SELECT * FROM queries WHERE id = ?', (query_id,))
-    query = cursor.fetchone()
-    if not query:
-        conn.close()
+    if not doc.exists:
         return jsonify({'error': 'Query no encontrada'}), 404
     
-    # Obtener keywords
-    cursor.execute('SELECT keyword FROM keywords WHERE query_id = ?', (query_id,))
-    keywords = [row[0] for row in cursor.fetchall()]
-    
-    # Obtener prompts
-    cursor.execute('SELECT language, prompt_text FROM prompts WHERE query_id = ?', (query_id,))
-    prompts = {row[0]: row[1] for row in cursor.fetchall()}
-    
-    # Obtener modelos seleccionados
-    cursor.execute('SELECT model_id FROM query_models WHERE query_id = ?', (query_id,))
-    model_ids = [row[0] for row in cursor.fetchall()]
+    query_data = doc.to_dict()
+    keywords = query_data.get('keywords', [])
+    prompts = query_data.get('prompts', {})
+    model_ids = query_data.get('models', [])
     
     results = []
     
@@ -631,12 +505,21 @@ def track_query(query_id):
                         position = find_keyword_position(response, keyword)
                         visibility = calculate_visibility(response, keyword)
                         
-                        # Guardar resultado
-                        cursor.execute('''
-                            INSERT INTO tracking_results 
-                            (query_id, keyword, model_id, prompt_text, question_text, language, response_text, position, visibility)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        ''', (query_id, keyword, model_id, prompt, question_text, language, response, position, visibility))
+                        # Guardar resultado en Firestore
+                        result_data = {
+                            'query_id': query_id,
+                            'keyword': keyword,
+                            'model_id': model_id,
+                            'prompt_text': prompt,
+                            'question_text': question_text,
+                            'language': language,
+                            'response_text': response,
+                            'position': position,
+                            'visibility': visibility,
+                            'tracked_at': datetime.now()
+                        }
+                        
+                        db.collection('tracking_results').add(result_data)
                         
                         results.append({
                             'keyword': keyword,
@@ -648,6 +531,7 @@ def track_query(query_id):
                         })
                         
                     except Exception as e:
+                        print(f"Error tracking {keyword} on {model_id}: {e}")
                         results.append({
                             'keyword': keyword,
                             'model': model_id,
@@ -656,27 +540,18 @@ def track_query(query_id):
                             'success': False
                         })
 
-    
-    conn.commit()
-    conn.close()
     return jsonify({'results': results, 'message': 'Tracking completado'})
 
-@app.route('/api/queries/<int:query_id>/results', methods=['GET'])
+@app.route('/api/queries/<query_id>/results', methods=['GET'])
 def get_tracking_results(query_id):
     """Obtiene los resultados de tracking de una query"""
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
+    results_ref = db.collection('tracking_results').where('query_id', '==', query_id).order_by('tracked_at', direction=firestore.Query.DESCENDING)
+    docs = results_ref.stream()
     
-    cursor.execute('''
-        SELECT keyword, model_id, question_text, language, position, visibility, tracked_at
-        FROM tracking_results
-        WHERE query_id = ?
-        ORDER BY tracked_at DESC
-    ''', (query_id,))
-    
-    results = [dict(row) for row in cursor.fetchall()]
-    conn.close()
+    results = []
+    for doc in docs:
+        results.append(doc.to_dict())
+        
     return jsonify(results)
 
 @app.route('/api/models', methods=['GET'])
@@ -687,37 +562,48 @@ def get_models():
 @app.route('/api/stats', methods=['GET'])
 def get_stats():
     """Obtiene estadísticas globales del dashboard"""
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    
+    # Nota: Las agregaciones de conteo (count()) son más eficientes in Firestore
     # Queries activas
-    cursor.execute('SELECT COUNT(*) FROM queries')
-    active_queries = cursor.fetchone()[0]
+    queries_coll = db.collection('queries')
+    active_queries = queries_coll.count().get()[0][0].value
     
     # Resultados totales
-    cursor.execute('SELECT COUNT(*) FROM tracking_results')
-    total_results = cursor.fetchone()[0]
+    results_coll = db.collection('tracking_results')
+    total_results = results_coll.count().get()[0][0].value
     
-    # Visibilidad media
-    cursor.execute('SELECT AVG(visibility) FROM tracking_results WHERE visibility IS NOT NULL')
-    avg_visibility = cursor.fetchone()[0] or 0.0
+    # Visibilidad media (Esto es costoso en Firestore sin agregaciones previas, 
+    # lo haremos aproximado o simple por ahora trayendo una muestra o calculando bajo demanda)
+    # Por eficiencia, si son muchos datos, mejor mantener un contador en un documento de stats
+    # Aquí, por simplicidad para la migración, haremos una consulta limitada o lo dejamos en 0 si es muy costoso
+    # Una opción segura para un dashboard pequeño es traer los últimos 100 resultados
     
-    # Modelos IA únicos
-    cursor.execute('SELECT COUNT(DISTINCT model_id) FROM query_models')
-    total_models = cursor.fetchone()[0]
+    recent_results = results_coll.order_by('tracked_at', direction=firestore.Query.DESCENDING).limit(100).stream()
+    vis_sum = 0
+    vis_count = 0
+    unique_models = set()
     
-    conn.close()
+    for r in recent_results:
+        data = r.to_dict()
+        if data.get('visibility') is not None:
+            vis_sum += data.get('visibility')
+            vis_count += 1
+        if data.get('model_id'):
+            unique_models.add(data.get('model_id'))
+            
+    avg_visibility = vis_sum / vis_count if vis_count > 0 else 0.0
+    
+    # Para modelos, mejor una estimación basada en configuration o lo que tenemos en memoria
+    # Total models lo podemos sacar de AVAILABLE_MODELS o de los documentos de queries
     
     return jsonify({
         'active_queries': active_queries,
         'total_results': total_results,
         'avg_visibility': round(avg_visibility, 2),
-        'total_models': total_models
+        'total_models': len(unique_models)
     })
 
 # Inicializar y migrar base de datos al arrancar
-init_db()
-migrate_db()
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

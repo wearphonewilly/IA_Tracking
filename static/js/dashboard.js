@@ -71,10 +71,10 @@ function createQueryElement(query) {
         <div class="query-header">
             <h3>${escapeHtml(query.name)}</h3>
             <div class="query-actions">
-                <button class="btn btn-secondary" onclick="editQuery(${query.id})">
+                <button class="btn btn-secondary" onclick="editQuery('${query.id}')">
                     <span class="icon">✎</span> Editar
                 </button>
-                <button class="btn btn-danger" onclick="deleteQueryConfirm(${query.id}, '${escapeHtml(query.name)}')">
+                <button class="btn btn-danger" onclick="deleteQueryConfirm('${query.id}', '${escapeHtml(query.name)}')">
                     <span class="icon">🗑</span> Eliminar
                 </button>
             </div>
@@ -112,7 +112,7 @@ function createQueryTable(query) {
                 <td>-</td>
                 <td>-</td>
                 <td>
-                    <button class="btn btn-track" onclick="trackQuery(${query.id})">
+                    <button class="btn btn-track" onclick="trackQuery('${query.id}')">
                         ▷ Trackear
                     </button>
                     <button class="btn btn-icon-small" onclick="showMetricsInfo()" title="¿Qué son estas métricas?">
@@ -144,7 +144,7 @@ function createQueryTable(query) {
 
 // Funciones de navegación
 function createNewQuery() {
-    window.location.href = `/query/0/edit`;
+    window.location.href = `/query/new/edit`;
 }
 
 function editQuery(queryId) {
