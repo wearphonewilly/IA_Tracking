@@ -19,8 +19,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Cargar query
 async function loadQuery() {
     try {
+        console.log(`Sending GET request to /api/queries/${queryId}`);
         const response = await fetch(`${API_BASE}/api/queries/${queryId}`);
         queryData = await response.json();
+        console.log('Response from /api/queries/' + queryId + ':', queryData);
 
         document.getElementById('query-title').textContent = queryData.name;
 
@@ -50,8 +52,10 @@ async function loadQuery() {
 // Cargar resultados de tracking
 async function loadTrackingResults() {
     try {
+        console.log(`Sending GET request to /api/queries/${queryId}/results`);
         const response = await fetch(`${API_BASE}/api/queries/${queryId}/results`);
         trackingResults = await response.json();
+        console.log('Response from /api/queries/' + queryId + '/results:', trackingResults);
         renderQueryContent();
     } catch (error) {
         console.error('Error cargando resultados de tracking:', error);
@@ -257,6 +261,7 @@ async function deleteQuery() {
     }
 
     try {
+        console.log(`Sending DELETE request to ${API_BASE}/api/queries/${queryId}`);
         const response = await fetch(`${API_BASE}/api/queries/${queryId}`, {
             method: 'DELETE'
         });
@@ -291,4 +296,3 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
-

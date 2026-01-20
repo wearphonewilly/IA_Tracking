@@ -10,8 +10,10 @@ document.addEventListener('DOMContentLoaded', () => {
 // Cargar estadísticas
 async function loadStats() {
     try {
+        console.log('Sending GET request to /api/stats');
         const response = await fetch(`${API_BASE}/api/stats`);
         const stats = await response.json();
+        console.log('Response from /api/stats:', stats);
 
         document.getElementById('stat-active-queries').textContent = stats.active_queries;
         document.getElementById('stat-total-results').textContent = stats.total_results;
@@ -35,8 +37,10 @@ async function loadStats() {
 // Cargar queries
 async function loadQueries() {
     try {
+        console.log('Sending GET request to /api/queries');
         const response = await fetch(`${API_BASE}/api/queries`);
         const queries = await response.json();
+        console.log('Response from /api/queries:', queries);
 
         const container = document.getElementById('queries-container');
         container.innerHTML = '';
@@ -162,6 +166,7 @@ async function deleteQueryConfirm(queryId, queryName) {
     }
 
     try {
+        console.log(`Sending DELETE request to ${API_BASE}/api/queries/${queryId}`);
         const response = await fetch(`${API_BASE}/api/queries/${queryId}`, {
             method: 'DELETE'
         });
@@ -199,4 +204,3 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
-

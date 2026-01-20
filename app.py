@@ -318,68 +318,76 @@ def edit_query(query_id):
 @app.route('/api/queries', methods=['GET'])
 def get_queries():
     """Obtiene todas las queries"""
-    queries_ref = db.collection('queries').order_by('updated_at', direction=firestore.Query.DESCENDING)
-    docs = queries_ref.stream()
-    
-    queries = []
-    for doc in docs:
-        query_data = doc.to_dict()
-        query_data['id'] = doc.id
+    try:
+        queries_ref = db.collection('queries').order_by('updated_at', direction=firestore.Query.DESCENDING)
+        docs = queries_ref.stream()
         
-        # En Firestore guardamos keywords, models y prompts dentro del documento
-        # Aseguramos valores por defecto si no existen
-        query_data['keywords'] = query_data.get('keywords', [])
-        query_data['models'] = query_data.get('models', [])
-        query_data['prompts'] = query_data.get('prompts', {})
-        
-        # Obtener estadísticas (simplificado para evitar N lecturas excesivas si es posible)
-        # Para métricas exactas, tendríamos que consultar la colección tracking_results
-        
-        # Consultar últimos resultados para métricas
-        results_ref = db.collection('tracking_results').where('query_id', '==', doc.id).order_by('tracked_at', direction=firestore.Query.DESCENDING).limit(50)
-        results_docs = results_ref.stream()
-        
-        results = []
-        for r_doc in results_docs:
-            results.append(r_doc.to_dict())
+        queries = []
+        for doc in docs:
+            query_data = doc.to_dict()
+            query_data['id'] = doc.id
             
-        keyword_metrics = {}
-        latest_results_by_keyword = {}
-        unique_models = set()
-        
-        for r in results:
-            kw = r.get('keyword')
-            model_id = r.get('model_id')
-            unique_models.add(model_id)
+            # En Firestore guardamos keywords, models y prompts dentro del documento
+            # Aseguramos valores por defecto si no existen
+            query_data['keywords'] = query_data.get('keywords', [])
+            query_data['models'] = query_data.get('models', [])
+            query_data['prompts'] = query_data.get('prompts', {})
             
-            if kw not in latest_results_by_keyword:
-                latest_results_by_keyword[kw] = {'vis': [], 'pos': []}
+            # Obtener estadísticas (simplificado para evitar N lecturas excesivas si es posible)
+            # Para métricas exactas, tendríamos que consultar la colección tracking_results
+            
+            # Consultar últimos resultados para métricas
+            results_ref = db.collection('tracking_results').where('query_id', '==', doc.id).limit(100)
+            results_docs = results_ref.stream()
+            
+            results = []
+            for r_doc in results_docs:
+                results.append(r_doc.to_dict())
+            
+            # Ordenar en memoria por fecha descendente
+            results.sort(key=lambda x: x.get('tracked_at', datetime.min), reverse=True)
+            results = results[:50] # Nos quedamos con los 50 más recientes
+            
+            keyword_metrics = {}
+            latest_results_by_keyword = {}
+            unique_models = set()
+            
+            for r in results:
+                kw = r.get('keyword')
+                model_id = r.get('model_id')
+                unique_models.add(model_id)
                 
-            latest_results_by_keyword[kw]['vis'].append(r.get('visibility', 0))
-            if r.get('position') is not None:
-                latest_results_by_keyword[kw]['pos'].append(r.get('position'))
-        
-        for kw, data in latest_results_by_keyword.items():
-            recent_vis = data['vis'][:5]
-            recent_pos = data['pos'][:5]
+                if kw not in latest_results_by_keyword:
+                    latest_results_by_keyword[kw] = {'vis': [], 'pos': []}
+                    
+                latest_results_by_keyword[kw]['vis'].append(r.get('visibility', 0))
+                if r.get('position') is not None:
+                    latest_results_by_keyword[kw]['pos'].append(r.get('position'))
             
-            avg_vis = sum(recent_vis) / len(recent_vis) if recent_vis else 0
-            avg_pos = sum(recent_pos) / len(recent_pos) if recent_pos else 0
-            
-            keyword_metrics[kw] = {
-                'avg_visibility': round(avg_vis, 1),
-                'avg_position': round(avg_pos, 1) if avg_pos > 0 else '-'
+            for kw, data in latest_results_by_keyword.items():
+                recent_vis = data['vis'][:5]
+                recent_pos = data['pos'][:5]
+                
+                avg_vis = sum(recent_vis) / len(recent_vis) if recent_vis else 0
+                avg_pos = sum(recent_pos) / len(recent_pos) if recent_pos else 0
+                
+                keyword_metrics[kw] = {
+                    'avg_visibility': round(avg_vis, 1),
+                    'avg_position': round(avg_pos, 1) if avg_pos > 0 else '-'
+                }
+                
+            query_data['keyword_metrics'] = keyword_metrics
+            query_data['stats'] = {
+                'total_keywords': len(query_data['keywords']),
+                'total_models': len(unique_models)
             }
             
-        query_data['keyword_metrics'] = keyword_metrics
-        query_data['stats'] = {
-            'total_keywords': len(query_data['keywords']),
-            'total_models': len(unique_models)
-        }
-        
-        queries.append(query_data)
+            queries.append(query_data)
 
-    return jsonify(queries)
+        return jsonify(queries)
+    except Exception as e:
+        print(f"Error getting queries: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/queries/<query_id>', methods=['GET'])
 def get_query(query_id):
