@@ -172,7 +172,7 @@ def query_groq(model, prompt, api_key, params=None):
     content = chat_completion.choices[0].message.content
     if not content or content.strip() == "":
         raise ValueError("Respuesta vacía o nula")
-    return content, elapsed
+    return content, elapsed, []
 
 def query_gemini(prompt, api_key):
     """Consulta a Gemini"""
@@ -181,13 +181,19 @@ def query_gemini(prompt, api_key):
     start = time.time()
     response = model.generate_content(prompt)
     elapsed = round(time.time() - start, 3)
+    citations = []
     if hasattr(response, "text") and response.text:
         content = response.text
     elif hasattr(response, "candidates") and response.candidates:
         content = response.candidates[0].content.parts[0].text
+        # Intentar extraer metadatos de citas si existen
+        if hasattr(response.candidates[0], "citation_metadata") and response.candidates[0].citation_metadata:
+             for citation in response.candidates[0].citation_metadata.citation_sources:
+                 if hasattr(citation, "uri") and citation.uri:
+                     citations.append(citation.uri)
     else:
         raise ValueError("Respuesta vacía o nula en Gemini")
-    return content, elapsed
+    return content, elapsed, citations
 
 def query_openrouter(model, prompt, api_key):
     """Consulta a un modelo a través de OpenRouter"""
@@ -210,7 +216,7 @@ def query_openrouter(model, prompt, api_key):
     content = result["choices"][0]["message"]["content"]
     if not content or content.strip() == "":
         raise ValueError("Respuesta vacía o nula")
-    return content, elapsed
+    return content, elapsed, []
 
 def query_openai(model, prompt, api_key, params=None):
     """Consulta a un modelo OpenAI"""
@@ -258,9 +264,10 @@ def query_perplexity(model, prompt, api_key):
     response.raise_for_status()
     result = response.json()
     content = result["choices"][0]["message"]["content"]
+    citations = result.get("citations", []) # Capturar citas
     if not content or content.strip() == "":
         raise ValueError("Respuesta vacía o nula")
-    return content, elapsed
+    return content, elapsed, citations
 
 def find_keyword_position(response, keyword):
     """Encuentra la posición de una keyword basada en el número de párrafo (1-indexado)"""
@@ -489,21 +496,22 @@ def track_query(query_id):
                             continue
                         
                         # Consultar según el provider
+                        # Consultar según el provider
                         if model_info['provider'] == 'groq':
                             # Extraer parámetros específicos del modelo si existen
                             params = model_info.get('params', {})
-                            response, elapsed = query_groq(model_id, prompt, GROQ_API_KEY, params)
+                            response, elapsed, sources = query_groq(model_id, prompt, GROQ_API_KEY, params)
                         elif model_info['provider'] == 'openai':
                             params = model_info.get('params', {})
-                            response, elapsed = query_openai(model_id, prompt, OPENAI_API_KEY, params)
+                            response, elapsed, sources = query_openai(model_id, prompt, OPENAI_API_KEY, params)
                         elif model_info['provider'] == 'google':
-                            response, elapsed = query_gemini(prompt, GOOGLE_API_KEY)
+                            response, elapsed, sources = query_gemini(prompt, GOOGLE_API_KEY)
                         elif model_info['provider'] == 'openrouter':
                             # Mapear el modelo de openrouter
                             openrouter_model = "deepseek/deepseek-chat" if model_id == "deepseek-chat" else model_id
-                            response, elapsed = query_openrouter(openrouter_model, prompt, OPEN_ROUTER_KEY)
+                            response, elapsed, sources = query_openrouter(openrouter_model, prompt, OPEN_ROUTER_KEY)
                         elif model_info['provider'] == 'perplexity':
-                            response, elapsed = query_perplexity(model_id, prompt, PERPLEXITY_API_KEY)
+                            response, elapsed, sources = query_perplexity(model_id, prompt, PERPLEXITY_API_KEY)
                         else:
                             continue
                         
@@ -522,6 +530,7 @@ def track_query(query_id):
                             'question_text': question_text,
                             'language': language,
                             'response_text': response,
+                            'sources': sources, # Guardar fuentes
                             'position': position,
                             'visibility': visibility,
                             'tracked_at': datetime.now()

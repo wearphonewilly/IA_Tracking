@@ -143,6 +143,16 @@ function renderQueryContent() {
                                         <div class="metric-label">Visibilidad</div>
                                         <div class="metric-value">${visibility}</div>
                                     </div>
+                                    <div class="metric-item" style="display: flex; gap: 0.5rem; justify-content: flex-end; align-items: flex-end;">
+                                        ${result ? `
+                                            <button class="btn btn-icon-small" title="Ver Fuentes" onclick="showSources('${escapeHtml(modelName)}', ${JSON.stringify(result.sources || []).replace(/"/g, '&quot;')})" style="background: #f1f5f9; color: #475569; width: auto; padding: 0.25rem 0.5rem; font-size: 0.7rem;">
+                                                🔗 Fuentes
+                                            </button>
+                                            <button class="btn btn-icon-small" title="Ver Competidores (Respuesta Completa)" onclick="showRanking('${escapeHtml(modelName)}', ${JSON.stringify(result.response_text || '').replace(/"/g, '&quot;')})" style="background: #f1f5f9; color: #475569; width: auto; padding: 0.25rem 0.5rem; font-size: 0.7rem;">
+                                                🏆 Ranking
+                                            </button>
+                                        ` : ''}
+                                    </div>
                                 </div>
                             </div>
                         `;
@@ -295,4 +305,61 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// Modales
+function showSources(modelName, sources) {
+    let content = '';
+    if (!sources || sources.length === 0) {
+        content = '<p style="color: #64748b;">No se encontraron fuentes externas para esta respuesta.</p>';
+    } else {
+        content = '<ul style="list-style: none; padding: 0;">';
+        sources.forEach(source => {
+            content += `
+                <li style="margin-bottom: 0.5rem;">
+                    <a href="${source}" target="_blank" style="color: #2563eb; text-decoration: none; word-break: break-all;">
+                        🔗 ${source}
+                    </a>
+                </li>
+            `;
+        });
+        content += '</ul>';
+    }
+    showModal(`Fuentes - ${modelName}`, content);
+}
+
+function showRanking(modelName, responseText) {
+    const content = `
+        <div style="background: #f8fafc; padding: 1rem; border-radius: 0.5rem; font-family: monospace; white-space: pre-wrap; font-size: 0.85rem; max-height: 60vh; overflow-y: auto; border: 1px solid #e2e8f0;">
+            ${escapeHtml(responseText)}
+        </div>
+    `;
+    showModal(`Ranking Competidores - ${modelName}`, content);
+}
+
+function showModal(title, content) {
+    // Eliminar modal anterior si existe
+    const existingModal = document.getElementById('custom-modal');
+    if (existingModal) existingModal.remove();
+
+    const modalHtml = `
+        <div id="custom-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+            <div style="background: white; border-radius: 0.75rem; width: 90%; max-width: 600px; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
+                <div style="padding: 1rem 1.5rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin: 0; font-size: 1.125rem; font-weight: 600; color: #1e293b;">${title}</h3>
+                    <button onclick="document.getElementById('custom-modal').remove()" style="background: none; border: none; font-size: 1.5rem; color: #64748b; cursor: pointer;">×</button>
+                </div>
+                <div style="padding: 1.5rem; overflow-y: auto;">
+                    ${content}
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Cerrar al hacer click fuera
+    document.getElementById('custom-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'custom-modal') e.target.remove();
+    });
 }
