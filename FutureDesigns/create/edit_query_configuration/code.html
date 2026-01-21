@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Create Query Configuration - BrandMonitor</title>
+<!-- Google Fonts: Manrope -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2463eb",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#111621",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1a202c",
+                        "border-light": "#e2e8f0",
+                        "border-dark": "#2d3748",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+        
+        /* Hide scrollbar for sidebar but keep functionality */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display transition-colors duration-200">
+<div class="flex h-screen w-full overflow-hidden">
+<!-- SideNavBar -->
+<aside class="w-64 flex-shrink-0 border-r border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark hidden md:flex flex-col justify-between h-full transition-colors duration-200">
+<div class="flex flex-col gap-6 p-6">
+<!-- Brand Logo -->
+<div class="flex items-center gap-3">
+<div class="bg-primary/10 flex items-center justify-center rounded-lg size-10">
+<span class="material-symbols-outlined text-primary text-2xl">monitoring</span>
+</div>
+<h1 class="text-lg font-bold tracking-tight text-slate-900 dark:text-white">BrandMonitor</h1>
+</div>
+<!-- Navigation -->
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary" href="#">
+<span class="material-symbols-outlined text-[20px] fill-1">database</span>
+<span class="text-sm font-medium">Queries</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">pie_chart</span>
+<span class="text-sm font-medium">Analytics</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">description</span>
+<span class="text-sm font-medium">Reports</span>
+</a>
+</nav>
+</div>
+<!-- Bottom Settings -->
+<div class="p-6 border-t border-border-light dark:border-border-dark">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</a>
+<div class="mt-4 flex items-center gap-3 px-3">
+<div class="size-8 rounded-full bg-cover bg-center" data-alt="User avatar profile picture" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCglQ6WUs5j4Mzs6L_BgtILe33AmnENSqqvNrrHA916BsyGbOqxTlzv5KfFKODdyZDo0ax0lJ6-iNnYl_tVczkGr-6EQHOF8j-GY1-NL2bYiQiq9LZDQLa0bFxOi71jCGsVtyyc7CL0i2aDExaQFbcY5-IxmfcN3Q7SdtKEKwB7tYNHatbPLTupLW1_iYZc9VbRJCYWPZCpqP5UIkEKtRUunIiPlBiOoURlmYciy3ZzF8wc5eetx3vcXLeMeaaeBTdO4DN8pmsVJg");'></div>
+<div class="flex flex-col">
+<span class="text-sm font-medium text-slate-900 dark:text-white">Alex Morgan</span>
+<span class="text-xs text-slate-500 dark:text-slate-500">Pro Plan</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col h-full overflow-hidden bg-background-light dark:bg-background-dark relative">
+<!-- TopNavBar -->
+<header class="flex-shrink-0 h-16 bg-surface-light dark:bg-surface-dark border-b border-border-light dark:border-border-dark flex items-center justify-between px-6 lg:px-10 z-20">
+<div class="flex items-center gap-4">
+<!-- Mobile Menu Button (Visible only on small screens) -->
+<button class="md:hidden text-slate-500 hover:text-primary">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h2 class="text-lg font-bold text-slate-900 dark:text-white">Create Query</h2>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+<input class="pl-9 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-primary/50 w-64 placeholder-slate-400" placeholder="Search..." type="text"/>
+</div>
+<button class="size-9 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 size-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-800"></span>
+</button>
+</div>
+</header>
+<!-- Scrollable Content -->
+<div class="flex-1 overflow-y-auto p-6 lg:p-10 scroll-smooth">
+<div class="max-w-4xl mx-auto flex flex-col gap-8 pb-24">
+<!-- Breadcrumbs & Heading -->
+<div class="flex flex-col gap-4">
+<nav class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+<a class="hover:text-primary transition-colors" href="#">Queries</a>
+<span class="material-symbols-outlined text-xs">chevron_right</span>
+<span class="text-slate-900 dark:text-white font-medium">Create Configuration</span>
+</nav>
+<div class="flex flex-col gap-1">
+<h1 class="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Create Query Configuration</h1>
+<p class="text-slate-500 dark:text-slate-400">Configure your brand monitoring parameters and select AI models to track.</p>
+</div>
+</div>
+<!-- 1. Basic Info Section -->
+<section class="flex flex-col gap-4 bg-surface-light dark:bg-surface-dark p-6 rounded-2xl border border-border-light dark:border-border-dark shadow-sm">
+<div class="flex items-center gap-2 border-b border-border-light dark:border-border-dark pb-3">
+<span class="flex items-center justify-center size-6 rounded-full bg-primary text-white text-xs font-bold">1</span>
+<h3 class="text-lg font-bold text-slate-900 dark:text-white">Basic Info</h3>
+</div>
+<div class="grid grid-cols-1 gap-6 pt-2">
+<div class="flex flex-col gap-2">
+<label class="text-sm font-semibold text-slate-700 dark:text-slate-300" for="config-name">Query Group Name <span class="text-red-500">*</span></label>
+<input class="w-full rounded-lg border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow placeholder-slate-400" id="config-name" placeholder="e.g. Q3 Brand Monitoring - North America" type="text"/>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-sm font-semibold text-slate-700 dark:text-slate-300" for="keywords">Target Keywords / Brands <span class="text-red-500">*</span></label>
+<div class="w-full min-h-[50px] p-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent flex flex-wrap gap-2 items-center">
+<span class="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 border border-primary/20">
+                                        Nike
+                                        <button class="hover:text-primary/70"><span class="material-symbols-outlined text-[16px]">close</span></button>
+</span>
+<span class="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 border border-primary/20">
+                                        Adidas
+                                        <button class="hover:text-primary/70"><span class="material-symbols-outlined text-[16px]">close</span></button>
+</span>
+<input class="flex-1 bg-transparent border-none focus:ring-0 p-1 text-slate-900 dark:text-white placeholder-slate-400 min-w-[150px]" id="keywords" placeholder="Type and press Enter..." type="text"/>
+</div>
+<p class="text-xs text-slate-500 dark:text-slate-500">These keywords will be injected into your prompts where {keyword} is used.</p>
+</div>
+</div>
+</section>
+<!-- 2. Prompts Section -->
+<section class="flex flex-col gap-4 bg-surface-light dark:bg-surface-dark p-6 rounded-2xl border border-border-light dark:border-border-dark shadow-sm">
+<div class="flex items-center justify-between border-b border-border-light dark:border-border-dark pb-3">
+<div class="flex items-center gap-2">
+<span class="flex items-center justify-center size-6 rounded-full bg-primary text-white text-xs font-bold">2</span>
+<h3 class="text-lg font-bold text-slate-900 dark:text-white">Prompts by Language</h3>
+</div>
+<button class="text-primary hover:text-blue-600 text-sm font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]">add</span> Add Language
+                            </button>
+</div>
+<div class="flex flex-col gap-6 pt-2">
+<!-- Language Block -->
+<div class="flex flex-col gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+<div class="flex justify-between items-start">
+<div class="w-full max-w-xs">
+<label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wider">Language</label>
+<div class="relative">
+<select class="w-full appearance-none rounded-lg border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent py-2 pl-3 pr-8">
+<option>English (US)</option>
+<option>Spanish</option>
+<option>French</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">expand_more</span>
+</div>
+</div>
+<button class="text-slate-400 hover:text-red-500 transition-colors p-1" title="Remove language">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Prompt Template</label>
+<div class="relative">
+<textarea class="w-full rounded-lg border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent p-3 font-mono text-sm leading-relaxed resize-y" placeholder="Enter your prompt here..." rows="4">Analyze the sentiment of the following brand: {keyword}. Provide a summary of its strengths and weaknesses.</textarea>
+<div class="absolute bottom-3 right-3 text-xs text-slate-400 bg-white dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
+                                            {keyword} detected
+                                        </div>
+</div>
+<p class="text-xs text-slate-500">Use <span class="font-mono text-primary bg-primary/10 px-1 rounded mx-0.5">{keyword}</span> as a placeholder variable.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- 3. AI Models Section -->
+<section class="flex flex-col gap-4 bg-surface-light dark:bg-surface-dark p-6 rounded-2xl border border-border-light dark:border-border-dark shadow-sm mb-10">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border-light dark:border-border-dark pb-3 gap-4">
+<div class="flex items-center gap-2">
+<span class="flex items-center justify-center size-6 rounded-full bg-primary text-white text-xs font-bold">3</span>
+<h3 class="text-lg font-bold text-slate-900 dark:text-white">AI Models</h3>
+</div>
+<div class="relative w-full sm:w-64">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+<input class="w-full pl-9 pr-4 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="Find a model..." type="text"/>
+</div>
+</div>
+<div class="flex items-center justify-between pt-2">
+<span class="text-sm text-slate-500 dark:text-slate-400">Select at least one model</span>
+<label class="flex items-center gap-2 cursor-pointer group">
+<input class="rounded border-slate-300 text-primary focus:ring-primary" type="checkbox"/>
+<span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-primary transition-colors">Select All</span>
+</label>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+<!-- Model Card 1 -->
+<label class="relative flex items-center p-4 rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-slate-800 hover:border-primary/50 dark:hover:border-primary/50 cursor-pointer transition-all shadow-sm hover:shadow-md group">
+<input checked="" class="peer sr-only" type="checkbox"/>
+<div class="absolute top-4 right-4 size-5 rounded border border-slate-300 dark:border-slate-500 peer-checked:bg-primary peer-checked:border-primary flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-white text-sm opacity-0 peer-checked:opacity-100">check</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="size-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-green-600 dark:text-green-400">smart_toy</span>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-slate-900 dark:text-white text-sm">GPT-4 Turbo</span>
+<span class="text-xs text-slate-500 dark:text-slate-400">OpenAI</span>
+</div>
+</div>
+<div class="absolute inset-0 rounded-xl ring-2 ring-transparent peer-checked:ring-primary/20 pointer-events-none"></div>
+</label>
+<!-- Model Card 2 -->
+<label class="relative flex items-center p-4 rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-slate-800 hover:border-primary/50 dark:hover:border-primary/50 cursor-pointer transition-all shadow-sm hover:shadow-md group">
+<input checked="" class="peer sr-only" type="checkbox"/>
+<div class="absolute top-4 right-4 size-5 rounded border border-slate-300 dark:border-slate-500 peer-checked:bg-primary peer-checked:border-primary flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-white text-sm opacity-0 peer-checked:opacity-100">check</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="size-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-purple-600 dark:text-purple-400">neurology</span>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-slate-900 dark:text-white text-sm">Claude 3 Opus</span>
+<span class="text-xs text-slate-500 dark:text-slate-400">Anthropic</span>
+</div>
+</div>
+<div class="absolute inset-0 rounded-xl ring-2 ring-transparent peer-checked:ring-primary/20 pointer-events-none"></div>
+</label>
+<!-- Model Card 3 -->
+<label class="relative flex items-center p-4 rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-slate-800 hover:border-primary/50 dark:hover:border-primary/50 cursor-pointer transition-all shadow-sm hover:shadow-md group">
+<input class="peer sr-only" type="checkbox"/>
+<div class="absolute top-4 right-4 size-5 rounded border border-slate-300 dark:border-slate-500 peer-checked:bg-primary peer-checked:border-primary flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-white text-sm opacity-0 peer-checked:opacity-100">check</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="size-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-blue-600 dark:text-blue-400">auto_awesome</span>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-slate-900 dark:text-white text-sm">Gemini Pro</span>
+<span class="text-xs text-slate-500 dark:text-slate-400">Google</span>
+</div>
+</div>
+<div class="absolute inset-0 rounded-xl ring-2 ring-transparent peer-checked:ring-primary/20 pointer-events-none"></div>
+</label>
+<!-- Model Card 4 -->
+<label class="relative flex items-center p-4 rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-slate-800 hover:border-primary/50 dark:hover:border-primary/50 cursor-pointer transition-all shadow-sm hover:shadow-md group">
+<input class="peer sr-only" type="checkbox"/>
+<div class="absolute top-4 right-4 size-5 rounded border border-slate-300 dark:border-slate-500 peer-checked:bg-primary peer-checked:border-primary flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-white text-sm opacity-0 peer-checked:opacity-100">check</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="size-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-orange-600 dark:text-orange-400">psychology</span>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-slate-900 dark:text-white text-sm">Llama 3 70B</span>
+<span class="text-xs text-slate-500 dark:text-slate-400">Meta</span>
+</div>
+</div>
+<div class="absolute inset-0 rounded-xl ring-2 ring-transparent peer-checked:ring-primary/20 pointer-events-none"></div>
+</label>
+<!-- Model Card 5 -->
+<label class="relative flex items-center p-4 rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-slate-800 hover:border-primary/50 dark:hover:border-primary/50 cursor-pointer transition-all shadow-sm hover:shadow-md group">
+<input class="peer sr-only" type="checkbox"/>
+<div class="absolute top-4 right-4 size-5 rounded border border-slate-300 dark:border-slate-500 peer-checked:bg-primary peer-checked:border-primary flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-white text-sm opacity-0 peer-checked:opacity-100">check</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="size-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-indigo-600 dark:text-indigo-400">bolt</span>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-slate-900 dark:text-white text-sm">Mistral Large</span>
+<span class="text-xs text-slate-500 dark:text-slate-400">Mistral AI</span>
+</div>
+</div>
+<div class="absolute inset-0 rounded-xl ring-2 ring-transparent peer-checked:ring-primary/20 pointer-events-none"></div>
+</label>
+</div>
+</section>
+</div>
+</div>
+<!-- Sticky Footer Actions -->
+<div class="absolute bottom-0 left-0 w-full bg-surface-light dark:bg-surface-dark border-t border-border-light dark:border-border-dark p-4 lg:px-10 z-30">
+<div class="max-w-4xl mx-auto flex items-center justify-end gap-4">
+<button class="px-6 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                        Cancel
+                    </button>
+<button class="px-6 py-2.5 rounded-lg bg-primary text-white font-bold hover:bg-blue-600 shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">save</span>
+                        Save Query
+                    </button>
+</div>
+</div>
+</main>
+</div>
+</body></html>

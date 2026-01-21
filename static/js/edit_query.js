@@ -155,7 +155,7 @@ function renderPrompts() {
                 class="prompt-textarea" 
                 placeholder="Escribe tus prompts aquí, uno por línea. Usa {keyword} como placeholder para tus keywords."
                 onchange="updatePrompt('${escapeHtml(language)}', this.value)"
-                style="min-height: 150px;"
+                style="min-height: 300px;"
             >${escapeHtml(prompts[language])}</textarea>
             <small style="display: block; margin-top: 0.5rem;">Usa {keyword} como placeholder para tus keywords</small>
         `;
