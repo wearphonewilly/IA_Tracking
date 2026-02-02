@@ -1,97 +1,214 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Medición de IAs</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
+
 <body>
-    <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <div class="header-content">
-                <div>
-                    <h1>Dashboard</h1>
-                    <p class="subtitle">Monitoriza la visibilidad de tus keywords en respuestas de IA</p>
+    <div class="app-wrapper">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-icon">◎</span>
+                    <span class="logo-text">AI Tracker</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="/" class="nav-item active">
+                    <span class="icon">⊞</span> Dashboard
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="icon">📊</span> Reports
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="icon">⚙</span> Configuration
+                </a>
+                <a href="/queries" class="nav-item">
+                    <span class="icon">📂</span> Queries
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="avatar">AM</div>
+                    <div class="user-info">
+                        <div class="user-name">Alex Morgan</div>
+                        <div class="user-role">Enterprise Admin</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="top-header">
+                <div class="header-left">
+                    <h1>Dashboard Overview</h1>
+                    <p class="subtitle">Track your brand visibility across all major LLMs</p>
                 </div>
                 <div class="header-actions">
-                    <button class="btn btn-secondary" onclick="refreshData()">
-                        <span class="icon">⟳</span> Actualizar
+                    <button class="btn btn-secondary" onclick="trackAll()" id="btn-track-all">
+                        <span class="icon">▷</span> Trackear Todo
                     </button>
                     <button class="btn btn-primary" onclick="createNewQuery()">
-                        <span class="icon">+</span> Nueva Query
+                        <span class="icon">+</span> Add Query
                     </button>
                 </div>
-            </div>
-        </header>
+            </header>
 
-        <!-- Stats Cards -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon blue">🎯</div>
-                <div class="stat-content">
-                    <div class="stat-value" id="stat-active-queries">0</div>
-                    <div class="stat-label">Queries Activas</div>
-                    <div class="stat-change" id="stat-active-change"></div>
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-top">
+                        <div class="stat-icon-wrapper blue">
+                            <span class="icon">≡</span>
+                        </div>
+                        <span class="trend-badge positive">↗ +12%</span>
+                    </div>
+                    <div class="stat-main">
+                        <div class="stat-value" id="stat-active-queries">0</div>
+                        <div class="stat-label">Active Queries</div>
+                    </div>
                 </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon blue">🔍</div>
-                <div class="stat-content">
-                    <div class="stat-value" id="stat-total-results">0</div>
-                    <div class="stat-label">Resultados Totales</div>
-                    <div class="stat-change" id="stat-total-change"></div>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon blue">📊</div>
-                <div class="stat-content">
-                    <div class="stat-value" id="stat-avg-visibility">0%</div>
-                    <div class="stat-label">Visibilidad Media</div>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon blue">⚡</div>
-                <div class="stat-content">
-                    <div class="stat-value" id="stat-total-models">0</div>
-                    <div class="stat-label">Modelos IA</div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Queries Section -->
-        <section class="queries-section">
-            <h2>Queries Configuradas</h2>
-            <div id="queries-container"></div>
-        </section>
+                <div class="stat-card">
+                    <div class="stat-top">
+                        <div class="stat-icon-wrapper purple">
+                            <span class="icon">💬</span>
+                        </div>
+                        <span class="trend-badge positive">↗ +8.4%</span>
+                    </div>
+                    <div class="stat-main">
+                        <div class="stat-value" id="stat-total-mentions">0</div>
+                        <div class="stat-label">Total Mentions</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-top">
+                        <div class="stat-icon-wrapper orange">
+                            <span class="icon">👁</span>
+                        </div>
+                        <span class="trend-badge positive">↗ +2.1%</span>
+                    </div>
+                    <div class="stat-main">
+                        <div class="stat-value" id="stat-avg-visibility">0%</div>
+                        <div class="stat-label">Avg. Visibility</div>
+                    </div>
+                    <div class="stat-progress">
+                        <!-- Ring chart placeholder or simple bar -->
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-top">
+                        <div class="stat-icon-wrapper green">
+                            <span class="icon">🤖</span>
+                        </div>
+                        <div class="model-icons">
+                            <span class="mini-badge">G</span>
+                            <span class="mini-badge">C</span>
+                            <span class="mini-badge">B</span>
+                        </div>
+                    </div>
+                    <div class="stat-main">
+                        <div class="stat-value" id="stat-active-models">0</div>
+                        <div class="stat-label">Monitored Models</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <section class="chart-section">
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3>Brand Coverage Over Time</h3>
+                        <div class="chart-actions">
+                            <span class="legend-item"><span class="dot blue"></span> My Brand</span>
+                            <span class="legend-item"><span class="dot gray"></span> Competitors</span>
+                        </div>
+                    </div>
+                    <div class="chart-canvas-wrapper">
+                        <canvas id="coverageChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Performance Summary Card (Side of chart) - Keeping existing layout idea but moving to bottom grid based on width -->
+            </section>
+
+            <!-- Bottom Grid -->
+            <div class="bottom-grid">
+                <!-- Brand Ranking -->
+                <div class="content-card ranking-card">
+                    <div class="card-header">
+                        <h3>Brand Ranking (SOV)</h3>
+                        <a href="#" class="link-action">View Full Report</a>
+                    </div>
+                    <div class="ranking-table-wrapper">
+                        <table class="ranking-table" id="ranking-table">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Brand Name</th>
+                                    <th>Share of Voice</th>
+                                    <th>Trend</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Top Prompts -->
+                <div class="content-card prompts-card">
+                    <div class="card-header">
+                        <h3>Top Prompts</h3>
+                        <a href="/queries" class="link-action">View All</a>
+                    </div>
+                    <div class="prompts-list" id="top-prompts-list">
+                        <!-- Populated by JS -->
+                    </div>
+                    <div class="card-footer">
+                        <button class="btn btn-secondary full-width" onclick="createNewQuery()">+ Add New
+                            Prompt</button>
+                    </div>
+                </div>
+            </div>
+
+        </main>
     </div>
 
-    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
-
+    <!-- Firebase SDKs -->
     <script type="module">
-      // Import the functions you need from the SDKs you need
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-      import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-analytics.js";
-      // TODO: Add SDKs for Firebase products that you want to use
-      // https://firebase.google.com/docs/web/setup#available-libraries
-
-      // Your web app's Firebase configuration
-      // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-      const firebaseConfig = {
-        apiKey: "AIzaSyCG5wU4E_NMl-M94gleMI-KJnA87pSNgBE",
-        authDomain: "ia-tracking-28e46.firebaseapp.com",
-        projectId: "ia-tracking-28e46",
-        storageBucket: "ia-tracking-28e46.firebasestorage.app",
-        messagingSenderId: "73826798267",
-        appId: "1:73826798267:web:c7ed99528f80f3daaef79e",
-        measurementId: "G-M3FZW3BJF4"
-      };
-
-      // Initialize Firebase
-      const app = initializeApp(firebaseConfig);
-      const analytics = getAnalytics(app);
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-analytics.js";
+        const firebaseConfig = {
+            apiKey: "{{ firebase_api_key }}",
+            authDomain: "ia-tracking-28e46.firebaseapp.com",
+            projectId: "ia-tracking-28e46",
+            storageBucket: "ia-tracking-28e46.firebasestorage.app",
+            messagingSenderId: "73826798267",
+            appId: "1:73826798267:web:c7ed99528f80f3daaef79e",
+            measurementId: "G-M3FZW3BJF4"
+        };
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
     </script>
-</body>
-</html>
 
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+
+</html>

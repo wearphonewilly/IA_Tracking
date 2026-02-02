@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Queries - AI Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+    <div class="app-wrapper">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-icon">◎</span>
+                    <span class="logo-text">AI Tracker</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="/" class="nav-item">
+                    <span class="icon">⊞</span> Dashboard
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="icon">📊</span> Reports
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="icon">⚙</span> Configuration
+                </a>
+                <a href="/queries" class="nav-item active">
+                    <span class="icon">📂</span> Queries
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="avatar">AM</div>
+                    <div class="user-info">
+                        <div class="user-name">Alex Morgan</div>
+                        <div class="user-role">Enterprise Admin</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="top-header">
+                <div class="header-left">
+                    <h1>My Queries</h1>
+                    <p class="subtitle">Manage all your brand monitoring configurations.</p>
+                </div>
+                <div class="header-actions">
+                    <a href="/query/0/edit" class="btn btn-primary">
+                        <span class="icon">+</span> Create New Query
+                    </a>
+                </div>
+            </header>
+
+            <!-- Queries Grid -->
+            <div id="queries-grid" class="stats-grid"
+                style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));">
+                <!-- Javascript will inject cards here -->
+            </div>
+
+            <div id="loading" style="text-align:center; padding: 2rem; color: var(--text-secondary);">
+                Loading queries...
+            </div>
+
+            <div id="no-data" style="text-align:center; padding: 3rem; display:none;">
+                <p style="color:var(--text-secondary); margin-bottom:1rem;">No queries found.</p>
+                <a href="/query/0/edit" class="btn btn-primary">Create your first Query</a>
+            </div>
+
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/queries.js') }}"></script>
+</body>
+
+</html>

@@ -4,70 +4,336 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Query Detail - Medición de IAs</title>
+    <title>Query Details - AI Tracker</title>
+    <!-- Roboto Font for Material Design -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Detail Page Specific Styles -->
+    <style>
+        /* Material Overrides for this page specifically if needed, 
+           but aim for global style.css updates */
+        body {
+            font-family: 'Roboto', sans-serif;
+        }
+
+        .detail-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+        }
+
+        .detail-title-group {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .back-btn {
+            color: var(--text-primary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+        }
+
+        .query-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0;
+            color: #202124;
+        }
+
+        .query-meta {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        /* Material Buttons */
+        .btn-material {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            /* Material uses typically 4px or pill */
+            font-family: 'Roboto', sans-serif;
+            font-weight: 500;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s;
+            border: 1px solid #dadce0;
+            background: white;
+            color: #3c4043;
+        }
+
+        .btn-material:hover {
+            background: #f8f9fa;
+            box-shadow: 0 1px 2px rgba(60, 64, 67, 0.3);
+        }
+
+        .btn-material.danger {
+            background: #d93025;
+            color: white;
+            border-color: #d93025;
+        }
+
+        .btn-material.danger:hover {
+            background: #b21f16;
+            box-shadow: 0 1px 3px rgba(60, 64, 67, 0.3);
+        }
+
+        /* Main Card */
+        .material-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .prompt-text {
+            font-size: 1.125rem;
+            color: #202124;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .badge-group {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .material-badge {
+            background: #f1f3f4;
+            color: #3c4043;
+            padding: 0.25rem 0.75rem;
+            border-radius: 16px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .btn-track-large {
+            background: #8e44ad;
+            /* Purple from screenshot */
+            color: white;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            border: none;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+            transition: all 0.2s;
+            float: right;
+        }
+
+        .btn-track-large:hover {
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+            background: #7d3c98;
+        }
+
+        /* Model Results Styling */
+        .model-result-row {
+            background: #f8f9fa;
+            /* Light grey background from screenshot */
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .model-name {
+            font-weight: 700;
+            font-size: 1rem;
+            color: #202124;
+            margin-bottom: 0.5rem;
+        }
+
+        .keyword-pill {
+            background: #e8f0fe;
+            color: #1967d2;
+            padding: 0.25rem 1rem;
+            border-radius: 16px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            display: inline-block;
+            margin-bottom: 1.5rem;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr) auto;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .metric-item label {
+            display: block;
+            font-size: 0.75rem;
+            color: #5f6368;
+            margin-bottom: 0.25rem;
+            text-transform: uppercase;
+            /* Makes it look professional */
+            letter-spacing: 0.5px;
+        }
+
+        .metric-value {
+            font-size: 1.125rem;
+            /* Big */
+            font-weight: 700;
+            color: #202124;
+        }
+
+        .action-buttons-col {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .btn-small-action {
+            background: white;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.75rem;
+            color: #3c4043;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .btn-small-action:hover {
+            background: #f1f3f4;
+        }
+    </style>
 </head>
 
 <body>
-    <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <div class="header-content">
-                <div class="header-left">
-                    <button class="btn-icon" onclick="goBack()">←</button>
-                    <div>
-                        <h1 id="query-title">Query</h1>
-                        <p class="subtitle" id="query-subtitle">Preguntas y modelos trackeados</p>
+    <div class="app-wrapper">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-icon">◎</span>
+                    <span class="logo-text">AI Tracker</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="/" class="nav-item">
+                    <span class="icon">⊞</span> Dashboard
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="icon">📊</span> Reports
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="icon">⚙</span> Configuration
+                </a>
+                <a href="/queries" class="nav-item active">
+                    <span class="icon">📂</span> Queries
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="avatar">AM</div>
+                    <div class="user-info">
+                        <div class="user-name">Alex Morgan</div>
+                        <div class="user-role">Enterprise Admin</div>
                     </div>
                 </div>
-                <div class="header-actions">
-                    <button class="btn btn-secondary" onclick="refreshData()">
-                        <span class="icon">⟳</span> Actualizar
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+
+            <!-- Detail Header -->
+            <div class="detail-header">
+                <div class="detail-title-group">
+                    <a href="/queries" class="back-btn">
+                        <span class="material-icons">arrow_back</span>
+                    </a>
+                    <div>
+                        <h1 class="query-title" id="query-name-display">Loading...</h1>
+                        <div class="query-meta">
+                            <span id="prompt-count">1 question</span> • <span id="model-count">1 model</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="header-buttons">
+                    <button class="btn-material" onclick="window.location.reload()">
+                        <span class="material-icons" style="font-size:16px;">refresh</span> Actualizar
                     </button>
-                    <button class="btn btn-secondary" onclick="editQuery()">
-                        <span class="icon">✎</span> Editar
-                    </button>
-                    <button class="btn btn-danger" onclick="deleteQuery()">
-                        <span class="icon">🗑</span> Eliminar
+                    <a href="#" id="edit-link" class="btn-material">
+                        <span class="material-icons" style="font-size:16px;">edit</span> Editar
+                    </a>
+                    <button class="btn-material danger" onclick="deleteQuery()">
+                        <span class="material-icons" style="font-size:16px;">delete</span> Eliminar
                     </button>
                 </div>
             </div>
-        </header>
 
-        <!-- Query Content -->
-        <div id="query-content"></div>
+            <!-- Main Content Card -->
+            <div class="material-card">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div style="flex: 1;">
+                        <h2 class="prompt-text" id="prompt-text-display">Loading prompt...</h2>
+                        <div class="badge-group">
+                            <span class="material-badge">
+                                <span style="font-size:12px;">🇪🇸</span> Español
+                            </span>
+                            <span class="material-badge" id="keyword-badge">
+                                1 keyword
+                            </span>
+                        </div>
+                    </div>
+
+                    <button class="btn-track-large" onclick="trackNow()">
+                        <span class="material-icons">play_arrow</span> Trackear
+                    </button>
+                </div>
+
+                <!-- Separator -->
+                <div style="margin: 2rem 0; border-top: 1px solid #f1f3f4;"></div>
+
+                <!-- Results - This will be dynamic in real implementation -->
+                <div id="results-container">
+                    <!-- Placeholder for no results -->
+                    <div style="color: #5f6368; text-align: center; padding: 1rem;">
+                        No tracking data available. Click "Trackear" to start.
+                    </div>
+                </div>
+            </div>
+
+        </main>
     </div>
 
+    <!-- Pass Query ID from backend -->
     <script>
-        // Obtener queryId de la URL (formato: /query/<id>)
-        const pathParts = window.location.pathname.split('/');
-        const queryId = pathParts[pathParts.length - 1];
+        const queryId = "{{ query_id }}";
     </script>
-    <script src="{{ url_for('static', filename='js/query_detail.js') }}"></script>
-
-    <script type="module">
-        // Import the functions you need from the SDKs you need
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-analytics.js";
-        // TODO: Add SDKs for Firebase products that you want to use
-        // https://firebase.google.com/docs/web/setup#available-libraries
-
-        // Your web app's Firebase configuration
-        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-        const firebaseConfig = {
-            apiKey: "AIzaSyCG5wU4E_NMl-M94gleMI-KJnA87pSNgBE",
-            authDomain: "ia-tracking-28e46.firebaseapp.com",
-            projectId: "ia-tracking-28e46",
-            storageBucket: "ia-tracking-28e46.firebasestorage.app",
-            messagingSenderId: "73826798267",
-            appId: "1:73826798267:web:c7ed99528f80f3daaef79e",
-            measurementId: "G-M3FZW3BJF4"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
-    </script>
+    <script src="{{ url_for('static', filename='js/detail.js') }}"></script>
 </body>
 
 </html>
